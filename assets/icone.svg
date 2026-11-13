@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f4f7fc"/><stop offset="1" stop-color="#dfe6f2"/></linearGradient>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#6fb2ff"/><stop offset="1" stop-color="#3a7fd6"/></linearGradient>
+    <clipPath id="c"><rect x="96" y="40" width="128" height="96" rx="8"/></clipPath>
+  </defs>
+  <rect x="8" y="8" width="240" height="240" rx="52" fill="url(#bg)"/>
+  <!-- frame -->
+  <rect x="90" y="34" width="140" height="108" rx="12" fill="#1a1f2b"/>
+  <g clip-path="url(#c)">
+    <rect x="96" y="40" width="128" height="96" fill="url(#sky)"/>
+    <circle cx="190" cy="66" r="12" fill="#ffd166"/>
+    <path d="M96 136 L136 90 L160 116 L180 98 L224 136 Z" fill="#1f5e46"/>
+  </g>
+  <!-- conector do frame ao ponto de corte -->
+  <path d="M196 142 L196 166" stroke="#ff6b6b" stroke-width="6" stroke-linecap="round"/>
+  <!-- trilha -->
+  <rect x="28" y="176" width="200" height="32" rx="10" fill="#c9d3e3"/>
+  <rect x="64" y="176" width="132" height="32" fill="#4f9dff" opacity="0.55"/>
+  <path d="M74 168 H62 V216 H74" fill="none" stroke="#3ecf8e" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M186 168 H198 V216 H186" fill="none" stroke="#ff6b6b" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
