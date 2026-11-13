@@ -1,11 +1,12 @@
 """Testes automatizados de ponta a ponta: geram vídeos com o ffmpeg, cortam e conferem a saída."""
+
+import subprocess
 import tempfile
 import unittest
 from pathlib import Path
 
 import get_frame as g
-from tests.base import (app, codec_video, contar_frames, extrair_frame, gerar_video, precisa_ffmpeg,
-                        psnr)
+from tests.base import app, codec_video, contar_frames, extrair_frame, gerar_video, precisa_ffmpeg, psnr
 
 
 def exportar(info, start, dur, out, precise=True, save_frame=True):
@@ -25,8 +26,9 @@ class TestExportacao(unittest.TestCase):
         cls._tmp = tempfile.TemporaryDirectory()
         cls.dir = Path(cls._tmp.name)
         cls.mp4 = gerar_video(cls.dir / "origem.mp4", fps=30, segundos=10)
-        cls.webm = gerar_video(cls.dir / "origem.webm", fps=25, segundos=6,
-                               vcodec="libvpx-vp9", acodec="libopus")
+        cls.webm = gerar_video(
+            cls.dir / "origem.webm", fps=25, segundos=6, vcodec="libvpx-vp9", acodec="libopus"
+        )
 
     @classmethod
     def tearDownClass(cls):
@@ -47,7 +49,8 @@ class TestExportacao(unittest.TestCase):
     def test_probe_rejeita_arquivo_sem_video(self):
         f = self.dir / "nao_e_video.txt"
         f.write_text("oi")
-        with self.assertRaises(Exception):
+        # ffprobe recusa o arquivo (CalledProcessError) ou ele não tem vídeo (ValueError)
+        with self.assertRaises((subprocess.CalledProcessError, ValueError)):
             g.probe(f)
 
     def _corte_preciso(self, origem, in_ms, out_ms, frame_ini, frame_fim, codec):
@@ -58,9 +61,9 @@ class TestExportacao(unittest.TestCase):
         ok, msg, video, frame = exportar(w.info, start, dur, out)
 
         self.assertTrue(ok, msg)
-        self.assertEqual(Path(video).suffix, origem.suffix)                  # mesmo container
-        self.assertEqual(codec_video(out), codec)                            # mesmo codec
-        self.assertEqual(contar_frames(out), frame_fim - frame_ini + 1)      # inclui os dois extremos
+        self.assertEqual(Path(video).suffix, origem.suffix)  # mesmo container
+        self.assertEqual(codec_video(out), codec)  # mesmo codec
+        self.assertEqual(contar_frames(out), frame_fim - frame_ini + 1)  # inclui os dois extremos
 
         # o PNG salvo é o frame marcado como fim, e não o vizinho
         self.assertEqual(Path(frame).name, out.stem + "_ultimo_frame.png")

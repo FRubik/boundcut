@@ -73,7 +73,9 @@ python -m unittest -v    # da raiz do projeto; sem dependências além das do pr
   container, codec, número de frames e se o PNG salvo é mesmo o frame marcado como fim.
   É pulado se o ffmpeg não estiver instalado.
 
-- `tests/test_projeto.py` — `pyproject.toml`, arquivos empacotados e links do README.
+- `tests/test_projeto.py` — `pyproject.toml`, arquivos empacotados, links do README e o
+  [Ruff](https://docs.astral.sh/ruff/) (lint + formatação; pulado sem `ruff`/`uvx`).
+  Para corrigir a formatação: `uvx ruff format .`
 
 A interface roda em modo `offscreen` nos testes, então não abre janela nem precisa de monitor.
 

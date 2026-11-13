@@ -8,6 +8,7 @@ pelo ffmpeg. Nesse modo o Qt não desenha o vídeo dentro do QVideoWidget, entã
 área do vídeo recebe o frame real daquela posição, extraído com o ffmpeg; o
 resto da janela e o diálogo de exportação são os do programa.
 """
+
 from __future__ import annotations
 
 import os
@@ -42,9 +43,25 @@ def main() -> int:
     with tempfile.TemporaryDirectory(prefix="get_frame-") as tmp:
         tmp = Path(tmp)
         video = tmp / "exemplo.mp4"
-        ffmpeg("-f", "lavfi", "-i", "mandelbrot=size=1280x720:rate=30", "-f", "lavfi", "-i",
-               "sine=frequency=330", "-t", "8", "-c:v", "libx264", "-pix_fmt", "yuv420p",
-               "-c:a", "aac", str(video))
+        ffmpeg(
+            "-f",
+            "lavfi",
+            "-i",
+            "mandelbrot=size=1280x720:rate=30",
+            "-f",
+            "lavfi",
+            "-i",
+            "sine=frequency=330",
+            "-t",
+            "8",
+            "-c:v",
+            "libx264",
+            "-pix_fmt",
+            "yuv420p",
+            "-c:a",
+            "aac",
+            str(video),
+        )
 
         w = g.MainWindow()
         w.resize(1100, 720)
@@ -64,8 +81,11 @@ def main() -> int:
         w.stack.addWidget(tela)
         w.stack.setCurrentWidget(tela)
         app.processEvents()
-        tela.setPixmap(QPixmap(str(frame)).scaled(tela.size(), Qt.AspectRatioMode.KeepAspectRatio,
-                                                  Qt.TransformationMode.SmoothTransformation))
+        tela.setPixmap(
+            QPixmap(str(frame)).scaled(
+                tela.size(), Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation
+            )
+        )
         app.processEvents()
         w.grab().save(str(SAIDA / "janela.png"))
 

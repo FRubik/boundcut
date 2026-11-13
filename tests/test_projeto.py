@@ -1,5 +1,8 @@
 """Testes da estrutura do projeto: pyproject.toml, arquivos referenciados e links do README."""
+
 import re
+import shutil
+import subprocess
 import unittest
 from pathlib import Path
 
@@ -58,6 +61,30 @@ class TestArquivosDoProjeto(unittest.TestCase):
     def test_readme_tem_prints(self):
         for readme in ("README.md", "README.pt-BR.md"):
             self.assertIn("assets/prints/", (RAIZ / readme).read_text(encoding="utf-8"), readme)
+
+
+def _ruff() -> list[str] | None:
+    if shutil.which("ruff"):
+        return ["ruff"]
+    if shutil.which("uvx"):
+        return ["uvx", "ruff"]
+    return None
+
+
+@unittest.skipIf(_ruff() is None, "ruff/uvx não encontrados")
+class TestRuff(unittest.TestCase):
+    """Lint e formatação fazem parte da suíte: a regra de rodar os testes cobre os dois."""
+
+    def _rodar(self, *args: str) -> subprocess.CompletedProcess:
+        return subprocess.run([*_ruff(), *args], cwd=RAIZ, capture_output=True, text=True)
+
+    def test_lint(self):
+        r = self._rodar("check", ".", "--output-format", "concise")
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+
+    def test_formatacao(self):
+        r = self._rodar("format", "--check", ".")
+        self.assertEqual(r.returncode, 0, "rode `uvx ruff format .`\n" + r.stdout + r.stderr)
 
 
 if __name__ == "__main__":

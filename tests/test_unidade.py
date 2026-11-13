@@ -1,4 +1,5 @@
 """Testes de unidade: funções puras e lógica da interface, sem precisar do ffmpeg."""
+
 import unittest
 from pathlib import Path
 
@@ -7,8 +8,16 @@ from tests.base import app
 
 
 def info(vcodec="h264", fps=30.0, duration=10.0, pix_fmt="yuv420p", acodec="aac"):
-    return g.VideoInfo(path=Path("/tmp/x.mp4"), duration=duration, fps=fps, vcodec=vcodec,
-                       pix_fmt=pix_fmt, acodec=acodec, width=320, height=180)
+    return g.VideoInfo(
+        path=Path("/tmp/x.mp4"),
+        duration=duration,
+        fps=fps,
+        vcodec=vcodec,
+        pix_fmt=pix_fmt,
+        acodec=acodec,
+        width=320,
+        height=180,
+    )
 
 
 class TestParseRate(unittest.TestCase):
@@ -38,8 +47,15 @@ class TestFmtTime(unittest.TestCase):
 
 class TestEncoders(unittest.TestCase):
     def test_mantem_o_codec_original(self):
-        casos = {"h264": "libx264", "hevc": "libx265", "vp9": "libvpx-vp9", "vp8": "libvpx",
-                 "av1": "libsvtav1", "mpeg4": "mpeg4", "prores": "prores_ks"}
+        casos = {
+            "h264": "libx264",
+            "hevc": "libx265",
+            "vp9": "libvpx-vp9",
+            "vp8": "libvpx",
+            "av1": "libsvtav1",
+            "mpeg4": "mpeg4",
+            "prores": "prores_ks",
+        }
         for codec, encoder in casos.items():
             args = g.video_encoder_args(info(codec), ".mkv")
             self.assertEqual(args[args.index("-c:v") + 1], encoder, codec)
@@ -63,8 +79,8 @@ class TestComandosExportacao(unittest.TestCase):
         w = g.ExportWorker(info(), 2.0, 3.0, Path("/tmp/saida.mp4"), precise=True, save_frame=True)
         cmds = w._build_cmds()
         self.assertEqual(len(cmds), 2)
-        self.assertIn("copy", cmds[0])                   # 1ª: áudio copiado
-        self.assertIn("aac", cmds[1])                    # 2ª: áudio reencodado
+        self.assertIn("copy", cmds[0])  # 1ª: áudio copiado
+        self.assertIn("aac", cmds[1])  # 2ª: áudio reencodado
         self.assertNotIn("-pix_fmt", cmds[1])
         for c in cmds:
             self.assertEqual(c[c.index("-ss") + 1], "2.000000")
@@ -76,7 +92,7 @@ class TestComandosExportacao(unittest.TestCase):
         w = g.ExportWorker(info(), 0, 1, Path("/tmp/saida.webm"), precise=False, save_frame=False)
         (cmd,) = w._build_cmds()
         self.assertEqual(cmd[cmd.index("-c") + 1], "copy")
-        self.assertNotIn("+faststart", cmd)              # só faz sentido em mp4/mov
+        self.assertNotIn("+faststart", cmd)  # só faz sentido em mp4/mov
 
 
 class TestTimeline(unittest.TestCase):
@@ -122,16 +138,17 @@ class TestCorteNaJanela(unittest.TestCase):
     def test_passo_de_frame_ida_e_volta(self):
         # step_frames posiciona em ceil(idx * frame_ms); o índice lido de volta tem de ser o mesmo
         import math
+
         for fps in (23.976, 25, 29.97, 30, 60):
             self.w.info = info(fps=fps)
             for idx in range(0, 400):
                 self.assertEqual(self.w.frame_index(math.ceil(idx * self.w.frame_ms)), idx, (fps, idx))
 
     def test_duracao_inclui_o_frame_do_fim(self):
-        self.w.in_ms, self.w.out_ms = 2000, 5000         # frames 60..150 → 91 frames
+        self.w.in_ms, self.w.out_ms = 2000, 5000  # frames 60..150 → 91 frames
         start, dur = self.w._cut_seconds()
         self.assertAlmostEqual(start, 2.0)
-        self.assertAlmostEqual(dur * 30, 90.5)            # meio frame depois do frame 150
+        self.assertAlmostEqual(dur * 30, 90.5)  # meio frame depois do frame 150
 
     def test_duracao_nao_passa_do_fim_do_video(self):
         self.w.in_ms, self.w.out_ms = 9000, 10_000
@@ -147,6 +164,7 @@ class TestCorteNaJanela(unittest.TestCase):
 
     def test_nome_padrao_nao_sobrescreve(self):
         import tempfile
+
         with tempfile.TemporaryDirectory() as d:
             src = Path(d) / "video.mp4"
             src.touch()

@@ -75,7 +75,9 @@ python -m unittest -v    # from the project root; no dependencies beyond the app
   container, codec, frame count, and that the saved PNG really is the frame marked as the end.
   Skipped if ffmpeg is not installed.
 
-- `tests/test_projeto.py` — `pyproject.toml`, packaged files and README links.
+- `tests/test_projeto.py` — `pyproject.toml`, packaged files, README links and
+  [Ruff](https://docs.astral.sh/ruff/) (lint + formatting; skipped without `ruff`/`uvx`).
+  To fix formatting: `uvx ruff format .`
 
 The UI runs with the `offscreen` platform during tests, so no window or display is needed.
 
