@@ -1,4 +1,5 @@
 """Utilitários compartilhados pelos testes."""
+
 from __future__ import annotations
 
 import re
@@ -24,11 +25,21 @@ def app() -> QApplication:
     return _APP
 
 
-def gerar_video(destino: Path, *, fps: int = 30, segundos: float = 10, vcodec: str = "libx264",
-                acodec: str | None = "aac") -> Path:
+def gerar_video(
+    destino: Path, *, fps: int = 30, segundos: float = 10, vcodec: str = "libx264", acodec: str | None = "aac"
+) -> Path:
     """Gera um vídeo sintético (testsrc2 tem contador e cores que mudam a cada frame)."""
-    cmd = ["ffmpeg", "-hide_banner", "-loglevel", "error", "-y",
-           "-f", "lavfi", "-i", f"testsrc2=size=320x180:rate={fps}"]
+    cmd = [
+        "ffmpeg",
+        "-hide_banner",
+        "-loglevel",
+        "error",
+        "-y",
+        "-f",
+        "lavfi",
+        "-i",
+        f"testsrc2=size=320x180:rate={fps}",
+    ]
     if acodec:
         cmd += ["-f", "lavfi", "-i", "sine=frequency=440"]
     cmd += ["-t", str(segundos), "-c:v", vcodec, "-pix_fmt", "yuv420p"]
@@ -39,28 +50,73 @@ def gerar_video(destino: Path, *, fps: int = 30, segundos: float = 10, vcodec: s
 
 def contar_frames(video: Path) -> int:
     out = subprocess.run(
-        ["ffprobe", "-v", "error", "-count_frames", "-select_streams", "v:0",
-         "-show_entries", "stream=nb_read_frames", "-of", "csv=p=0", str(video)],
-        capture_output=True, text=True, check=True).stdout
+        [
+            "ffprobe",
+            "-v",
+            "error",
+            "-count_frames",
+            "-select_streams",
+            "v:0",
+            "-show_entries",
+            "stream=nb_read_frames",
+            "-of",
+            "csv=p=0",
+            str(video),
+        ],
+        capture_output=True,
+        text=True,
+        check=True,
+    ).stdout
     return int(out.strip().strip(","))
 
 
 def codec_video(video: Path) -> str:
     return subprocess.run(
-        ["ffprobe", "-v", "error", "-select_streams", "v:0", "-show_entries", "stream=codec_name",
-         "-of", "csv=p=0", str(video)], capture_output=True, text=True, check=True).stdout.strip()
+        [
+            "ffprobe",
+            "-v",
+            "error",
+            "-select_streams",
+            "v:0",
+            "-show_entries",
+            "stream=codec_name",
+            "-of",
+            "csv=p=0",
+            str(video),
+        ],
+        capture_output=True,
+        text=True,
+        check=True,
+    ).stdout.strip()
 
 
 def extrair_frame(video: Path, indice: int, destino: Path) -> Path:
-    subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", str(video), "-vf", f"select=eq(n\\,{indice})",
-                    "-frames:v", "1", str(destino)], check=True)
+    subprocess.run(
+        [
+            "ffmpeg",
+            "-v",
+            "error",
+            "-y",
+            "-i",
+            str(video),
+            "-vf",
+            f"select=eq(n\\,{indice})",
+            "-frames:v",
+            "1",
+            str(destino),
+        ],
+        check=True,
+    )
     return destino
 
 
 def psnr(a: Path, b: Path) -> float:
     """PSNR médio entre duas imagens; 'inf' se forem idênticas."""
-    err = subprocess.run(["ffmpeg", "-i", str(a), "-i", str(b), "-lavfi", "psnr", "-f", "null", "-"],
-                         capture_output=True, text=True).stderr
+    err = subprocess.run(
+        ["ffmpeg", "-i", str(a), "-i", str(b), "-lavfi", "psnr", "-f", "null", "-"],
+        capture_output=True,
+        text=True,
+    ).stderr
     m = re.search(r"average:(\S+)", err)
     assert m, err
     return float(m.group(1))

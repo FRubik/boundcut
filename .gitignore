@@ -6,6 +6,11 @@
 __pycache__/
 *.py[cod]
 
+# empacotamento — gerado por `uv build` / `pip wheel` a partir do pyproject.toml
+build/
+dist/
+*.egg-info/
+
 # editores e ferramentas
 .vscode/
 .idea/

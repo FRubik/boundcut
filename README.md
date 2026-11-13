@@ -1,10 +1,14 @@
 <p align="center"><img src="assets/icone-256.png" width="96" alt=""></p>
 
-# get_frame
+# EndFrame
 
 **English** · [Português](README.pt-BR.md)
 
 A simple video trimmer that, along with the cut, **saves the last frame of the clip** as a PNG.
+
+![EndFrame window with a segment marked on the timeline](assets/prints/janela.png)
+
+<p align="center"><img src="assets/prints/exportado.png" width="480" alt="Export finished dialog with a preview of the last frame"></p>
 
 > The interface is in Brazilian Portuguese.
 
@@ -19,11 +23,22 @@ Elsewhere: `pip install PyQt6` and install ffmpeg with your package manager.
 
 ## Running
 
+Straight from the repository (uses the system's PyQt6):
+
 ```bash
-python get_frame.py              # open the window
-python get_frame.py video.mp4    # open with a video loaded
+python endframe.py              # open the window
+python endframe.py video.mp4    # open with a video loaded
 ./instalar-atalho.sh             # optional (Linux): app menu shortcut with icon
 ```
+
+Or installed as a command (`endframe`) in an isolated environment that brings its own PyQt6:
+
+```bash
+uv tool install git+https://github.com/FRubik/endframe   # or: pipx install git+https://…
+endframe video.mp4
+```
+
+ffmpeg still comes from the system either way.
 
 ## Usage
 
@@ -60,7 +75,14 @@ python -m unittest -v    # from the project root; no dependencies beyond the app
   container, codec, frame count, and that the saved PNG really is the frame marked as the end.
   Skipped if ffmpeg is not installed.
 
+- `tests/test_projeto.py` — `pyproject.toml`, packaged files, README links and
+  [Ruff](https://docs.astral.sh/ruff/) (lint + formatting; skipped without `ruff`/`uvx`).
+  To fix formatting: `uvx ruff format .`
+
 The UI runs with the `offscreen` platform during tests, so no window or display is needed.
+
+The README screenshots are generated from the app itself: `python scripts/gerar_prints.py`
+(re-run it when the UI changes).
 
 ## License
 
