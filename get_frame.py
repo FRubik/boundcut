@@ -172,17 +172,19 @@ class ExportWorker(QThread):
 
     # -- ffmpeg com barra de progresso --------------------------------------
     def _run(self, cmd: list[str], total: float) -> tuple[int, str]:
-        self._proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-        assert self._proc.stdout
-        for line in self._proc.stdout:
-            if line.startswith("out_time_us=") and total > 0:
-                try:
-                    us = int(line.split("=", 1)[1])
-                    self.progress.emit(min(99, int(us / 1e6 / total * 100)))
-                except ValueError:
-                    pass
-        err = self._proc.stderr.read() if self._proc.stderr else ""
-        return self._proc.wait(), err
+        # o "with" fecha os pipes ao terminar, inclusive se a exportação for cancelada
+        with subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True) as proc:
+            self._proc = proc
+            assert proc.stdout and proc.stderr
+            for line in proc.stdout:
+                if line.startswith("out_time_us=") and total > 0:
+                    try:
+                        us = int(line.split("=", 1)[1])
+                        self.progress.emit(min(99, int(us / 1e6 / total * 100)))
+                    except ValueError:
+                        pass
+            err = proc.stderr.read()
+            return proc.wait(), err
 
     def _build_cmds(self) -> list[list[str]]:
         ext = self.out_path.suffix.lower()
