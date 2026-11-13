@@ -7,7 +7,16 @@ from pathlib import Path
 
 from PyQt6.QtCore import QThread, pyqtSignal
 
-from boundcut.midia import FRAMES, VideoInfo, audio_fallback_args, frame_cmd, frame_png, video_encoder_args
+from boundcut.midia import (
+    BIN,
+    FRAMES,
+    SUBPROCESS_KW,
+    VideoInfo,
+    audio_fallback_args,
+    frame_cmd,
+    frame_png,
+    video_encoder_args,
+)
 
 
 class ExportWorker(QThread):
@@ -39,7 +48,7 @@ class ExportWorker(QThread):
     # -- ffmpeg com barra de progresso --------------------------------------
     def _run(self, cmd: list[str], total: float) -> tuple[int, str]:
         # o "with" fecha os pipes ao terminar, inclusive se a exportação for cancelada
-        with subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True) as proc:
+        with subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, **SUBPROCESS_KW) as proc:
             self._proc = proc
             assert proc.stdout and proc.stderr
             for line in proc.stdout:
@@ -55,7 +64,7 @@ class ExportWorker(QThread):
     def _build_cmds(self) -> list[list[str]]:
         ext = self.out_path.suffix.lower()
         base = [
-            "ffmpeg",
+            BIN["ffmpeg"],
             "-hide_banner",
             "-y",
             "-nostats",
@@ -113,7 +122,7 @@ class ExportWorker(QThread):
                 nome = FRAMES[qual].lower()
                 self.status.emit(f"Salvando o {nome}…")
                 fp = frame_png(self.out_path, qual)
-                r = subprocess.run(frame_cmd(self.out_path, qual, fp), capture_output=True, text=True)
+                r = subprocess.run(frame_cmd(self.out_path, qual, fp), capture_output=True, **SUBPROCESS_KW)
                 if r.returncode != 0 or not fp.exists():
                     self.progress.emit(100)
                     self.done.emit(

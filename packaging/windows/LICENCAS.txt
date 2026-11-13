@@ -1,0 +1,17 @@
+BoundCut para Windows — licenças / licenses
+===========================================
+
+BoundCut: licença MIT (arquivo LICENSE nesta pasta).
+Código-fonte: https://github.com/FRubik/boundcut
+
+Este pacote também inclui, sem modificações / This package also bundles, unmodified:
+
+- FFmpeg (pasta ffmpeg/) — build "gpl-shared" de https://github.com/BtbN/FFmpeg-Builds,
+  licença GPL v3 (ffmpeg/LICENSE-ffmpeg.txt). Versão exata em ffmpeg/VERSAO.txt.
+  Código-fonte: https://ffmpeg.org/download.html e https://github.com/BtbN/FFmpeg-Builds
+  O BoundCut só executa o ffmpeg.exe/ffprobe.exe como programas separados.
+
+- Qt 6 (LGPL v3) e PyQt6 (GPL v3), pasta _internal/PyQt6.
+  Código-fonte: https://download.qt.io/ e https://www.riverbankcomputing.com/software/pyqt/
+
+- Python (PSF License), empacotado com PyInstaller (GPL com exceção para o bootloader).

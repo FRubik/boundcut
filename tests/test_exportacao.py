@@ -5,7 +5,8 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from boundcut import exportacao, janela, midia
+from boundcut import app as app_mod
+from boundcut import exportacao, janela, midia, verificacao
 from tests.base import app, codec_video, contar_frames, extrair_frame, gerar_video, precisa_ffmpeg, psnr
 
 
@@ -114,6 +115,21 @@ class TestExportacao(unittest.TestCase):
         self.assertFalse(ok)
         self.assertIn("ffmpeg falhou", msg)
         self.assertFalse(out.exists())
+
+
+@precisa_ffmpeg
+class TestVerificacao(unittest.TestCase):
+    """O autoteste que a build do Windows roda no .exe também tem que passar aqui."""
+
+    def test_verificar_passa(self):
+        app()
+        with tempfile.TemporaryDirectory() as tmp:
+            rel = Path(tmp) / "relatorio.txt"
+            codigo = verificacao.verificar(rel, app_mod.ICON_PATH)
+            texto = rel.read_text(encoding="utf-8")
+        self.assertEqual(codigo, 0, texto)
+        self.assertIn("RESULTADO: ok", texto)
+        self.assertIn("[ok] exportação com os dois frames", texto)
 
 
 if __name__ == "__main__":

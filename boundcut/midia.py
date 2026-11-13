@@ -3,9 +3,36 @@
 from __future__ import annotations
 
 import json
+import shutil
 import subprocess
+import sys
 from dataclasses import dataclass
 from pathlib import Path
+
+# executáveis do ffmpeg: pelo nome (vêm do PATH) ou, no .exe do Windows, pelo caminho completo da
+# cópia embutida — assim as DLLs dela não se misturam com as que o Qt usa para tocar o vídeo
+BIN = {"ffmpeg": "ffmpeg", "ffprobe": "ffprobe"}
+
+# um programa sem console (o .exe) abriria uma janela preta a cada chamada do ffmpeg; e no Windows a
+# saída não viria em UTF-8 (nomes de arquivo com acento quebrariam o JSON do ffprobe)
+SUBPROCESS_KW: dict = {"encoding": "utf-8", "errors": "replace"}
+if sys.platform == "win32":
+    SUBPROCESS_KW["creationflags"] = subprocess.CREATE_NO_WINDOW
+
+
+def usar_ffmpeg_de(pasta: Path) -> bool:
+    """Passa a usar o ffmpeg/ffprobe de `pasta`, se os dois estiverem lá."""
+    exe = ".exe" if sys.platform == "win32" else ""
+    caminhos = {nome: pasta / f"{nome}{exe}" for nome in BIN}
+    if not all(p.is_file() for p in caminhos.values()):
+        return False
+    BIN.update({nome: str(p) for nome, p in caminhos.items()})
+    return True
+
+
+def ffmpeg_faltando() -> list[str]:
+    return [nome for nome, b in BIN.items() if not shutil.which(b)]
+
 
 VIDEO_EXTS = {".mp4", ".mov", ".mkv", ".webm", ".avi", ".m4v", ".mpg", ".mpeg", ".ts", ".wmv", ".flv"}
 
@@ -39,10 +66,10 @@ def _parse_rate(rate: str | None) -> float:
 
 def probe(path: Path) -> VideoInfo:
     out = subprocess.run(
-        ["ffprobe", "-v", "error", "-print_format", "json", "-show_format", "-show_streams", str(path)],
+        [BIN["ffprobe"], "-v", "error", "-print_format", "json", "-show_format", "-show_streams", str(path)],
         capture_output=True,
-        text=True,
         check=True,
+        **SUBPROCESS_KW,
     ).stdout
     data = json.loads(out)
     v = next(
@@ -120,7 +147,18 @@ def frame_cmd(video: Path, qual: str, png: Path) -> list[str]:
         entrada, saida = ["-sseof", "-3", "-i", str(video)], ["-update", "1"]
     else:
         raise ValueError(f"frame desconhecido: {qual}")
-    return ["ffmpeg", "-hide_banner", "-y", "-loglevel", "error", *entrada, "-map", "0:v:0", *saida, str(png)]
+    return [
+        BIN["ffmpeg"],
+        "-hide_banner",
+        "-y",
+        "-loglevel",
+        "error",
+        *entrada,
+        "-map",
+        "0:v:0",
+        *saida,
+        str(png),
+    ]
 
 
 def fmt_time(seconds: float) -> str:

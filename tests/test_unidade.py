@@ -1,8 +1,12 @@
 """Testes de unidade: funções puras e lógica da interface, sem precisar do ffmpeg."""
 
+import sys
+import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
+from boundcut import app as app_mod
 from boundcut import exportacao, janela, midia, timeline
 from tests.base import app
 
@@ -86,7 +90,7 @@ class TestComandosExportacao(unittest.TestCase):
             self.assertEqual(c[c.index("-ss") + 1], "2.000000")
             self.assertEqual(c[c.index("-t") + 1], "3.000000")
             self.assertIn("+faststart", c)
-            self.assertEqual(c[-1], "/tmp/saida.mp4")
+            self.assertEqual(c[-1], str(Path("/tmp/saida.mp4")))  # no Windows vira \\tmp\\…
 
     def test_modo_rapido_copia_streams(self):
         w = exportacao.ExportWorker(info(), 0, 1, Path("/tmp/saida.webm"), precise=False, frames=())
@@ -126,6 +130,41 @@ class TestFrames(unittest.TestCase):
         self.assertEqual(
             exportacao.ExportWorker(info(), 0, 1, Path("/tmp/s.mp4"), precise=True).frames, ("ultimo",)
         )
+
+
+class TestFfmpegEmbutido(unittest.TestCase):
+    def setUp(self):
+        original = dict(midia.BIN)
+        self.addCleanup(lambda: (midia.BIN.clear(), midia.BIN.update(original)))
+        self._tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self._tmp.cleanup)
+        self.pasta = Path(self._tmp.name)
+
+    def _criar(self, *nomes):
+        exe = ".exe" if sys.platform == "win32" else ""
+        for n in nomes:
+            (self.pasta / f"{n}{exe}").write_text("")
+
+    def test_usa_os_dois_quando_existem(self):
+        self._criar("ffmpeg", "ffprobe")
+        self.assertTrue(midia.usar_ffmpeg_de(self.pasta))
+        self.assertTrue(Path(midia.BIN["ffmpeg"]).is_absolute())
+        self.assertEqual(Path(midia.BIN["ffprobe"]).parent, self.pasta)
+        # os comandos passam a sair com o caminho completo
+        self.assertEqual(midia.frame_cmd(Path("v.mp4"), "primeiro", Path("p.png"))[0], midia.BIN["ffmpeg"])
+
+    def test_nao_troca_pela_metade(self):
+        self._criar("ffmpeg")  # falta o ffprobe
+        self.assertFalse(midia.usar_ffmpeg_de(self.pasta))
+        self.assertEqual(midia.BIN, {"ffmpeg": "ffmpeg", "ffprobe": "ffprobe"})
+
+    def test_pasta_embutida_so_no_executavel(self):
+        self.assertIsNone(app_mod.pasta_ffmpeg_embutido())  # rodando do Python, usa o PATH
+        with (
+            mock.patch.object(sys, "frozen", True, create=True),
+            mock.patch.object(sys, "executable", str(self.pasta / "BoundCut.exe")),
+        ):
+            self.assertEqual(app_mod.pasta_ffmpeg_embutido(), self.pasta.resolve() / "ffmpeg")
 
 
 class TestTimeline(unittest.TestCase):

@@ -10,4 +10,4 @@ Módulos: midia (ffprobe/ffmpeg, sem Qt) · exportacao (thread do corte) ·
 timeline (linha do tempo) · janela (janela principal) · app (main).
 """
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"

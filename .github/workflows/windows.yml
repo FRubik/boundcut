@@ -1,0 +1,94 @@
+# Gera o BoundCut para Windows (.zip com BoundCut.exe e o ffmpeg embutido).
+# - push que mexe no programa: roda os testes no Windows e deixa o .zip como artefato da execução
+# - tag v* (ex.: v0.2.0): idem, e publica o .zip numa Release
+name: Windows
+
+on:
+  push:
+    branches: ["**"]
+    tags: ["v*"]
+    paths:
+      - "boundcut/**"
+      - "tests/**"
+      - "packaging/**"
+      - "pyproject.toml"
+      - ".github/workflows/windows.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write # criar a Release nas tags
+
+jobs:
+  build:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Dependências
+        run: python -m pip install --upgrade pip PyQt6 pyinstaller pillow
+
+      - name: ffmpeg (BtbN, GPL, shared)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # o build "latest" mais novo de uma versão estável (nX.Y), não o master
+          $nomes = gh release view latest -R BtbN/FFmpeg-Builds --json assets --jq '.assets[].name' |
+            Where-Object { $_ -match '^ffmpeg-n(\d+\.\d+)-latest-win64-gpl-shared-\d+\.\d+\.zip$' }
+          $nome = $nomes | Sort-Object { [version]([regex]::Match($_, 'n(\d+\.\d+)').Groups[1].Value) } |
+            Select-Object -Last 1
+          if (-not $nome) { throw "build do ffmpeg não encontrado" }
+          gh release download latest -R BtbN/FFmpeg-Builds -p $nome -D $env:RUNNER_TEMP
+          Expand-Archive "$env:RUNNER_TEMP\$nome" -DestinationPath "$env:RUNNER_TEMP\ff"
+          $raiz = (Get-ChildItem "$env:RUNNER_TEMP\ff" -Directory | Select-Object -First 1).FullName
+          New-Item -ItemType Directory ffmpeg-win | Out-Null
+          Copy-Item "$raiz\bin\*" ffmpeg-win\
+          Remove-Item ffmpeg-win\ffplay.exe -ErrorAction SilentlyContinue
+          Copy-Item "$raiz\LICENSE.txt" ffmpeg-win\LICENSE-ffmpeg.txt
+          Set-Content ffmpeg-win\VERSAO.txt $nome
+          "$PWD\ffmpeg-win" | Out-File -Append -Encoding utf8 $env:GITHUB_PATH
+          Write-Output "ffmpeg: $nome"
+
+      - name: Testes
+        env:
+          QT_QPA_PLATFORM: offscreen
+        run: python -m unittest -v
+
+      - name: PyInstaller
+        run: |
+          pyinstaller --noconfirm --windowed --name BoundCut `
+            --icon assets/icone-256.png `
+            --paths . `
+            --add-data "boundcut/assets;boundcut/assets" `
+            boundcut/__main__.py
+          Copy-Item -Recurse ffmpeg-win dist\BoundCut\ffmpeg
+          Copy-Item LICENSE dist\BoundCut\LICENSE.txt
+          Copy-Item packaging\windows\LICENCAS.txt dist\BoundCut\
+
+      - name: Autoteste do .exe
+        run: |
+          # sem o ffmpeg do sistema no PATH: o .exe tem que achar o embutido sozinho
+          $env:PATH = ($env:PATH -split ';' | Where-Object { $_ -notlike '*ffmpeg-win*' }) -join ';'
+          $p = Start-Process dist\BoundCut\BoundCut.exe -ArgumentList '--verificar', "$PWD\verificar.txt" -Wait -PassThru
+          Get-Content verificar.txt
+          if ($p.ExitCode -ne 0) { throw "autoteste falhou (código $($p.ExitCode))" }
+
+      - name: Zip
+        run: Compress-Archive -Path dist\BoundCut -DestinationPath BoundCut-windows.zip
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: BoundCut-windows
+          path: BoundCut-windows.zip
+
+      - name: Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create $env:GITHUB_REF_NAME BoundCut-windows.zip --title "BoundCut $env:GITHUB_REF_NAME" --generate-notes
