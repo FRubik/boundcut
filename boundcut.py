@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""BoundCut — editor simples para cortar um vídeo e salvar o último frame do corte.
+"""BoundCut — editor simples para cortar um vídeo e salvar o primeiro e/ou o último frame do corte.
 
 Fluxo: abrir vídeo → marcar início/fim → exportar.
 A exportação mantém o formato original (mesmo container e, quando possível,
-o mesmo codec de vídeo) e grava ao lado um PNG com o último frame do corte.
+o mesmo codec de vídeo) e grava ao lado um PNG com o primeiro e/ou o último frame do corte.
 
 Requisitos: Python 3.10+, PyQt6 (com QtMultimedia) e ffmpeg/ffprobe no PATH.
 """
@@ -160,6 +160,27 @@ def audio_fallback_args(ext: str) -> list[str]:
     return ["-c:a", "aac", "-b:a", "192k"]
 
 
+# frames que podem ser salvos junto com o corte, na ordem em que aparecem
+FRAMES = {"primeiro": "Primeiro frame", "ultimo": "Último frame"}
+
+
+def frame_png(out_path: Path, qual: str) -> Path:
+    """Caminho do PNG de um frame do corte: video_corte.mp4 → video_corte_ultimo_frame.png."""
+    return out_path.with_name(f"{out_path.stem}_{qual}_frame.png")
+
+
+def frame_cmd(video: Path, qual: str, png: Path) -> list[str]:
+    """Comando do ffmpeg que grava o primeiro ou o último frame de `video` em `png`."""
+    if qual == "primeiro":
+        entrada, saida = ["-i", str(video)], ["-frames:v", "1"]
+    elif qual == "ultimo":
+        # decodifica só os últimos segundos e vai sobrescrevendo: fica o último frame
+        entrada, saida = ["-sseof", "-3", "-i", str(video)], ["-update", "1"]
+    else:
+        raise ValueError(f"frame desconhecido: {qual}")
+    return ["ffmpeg", "-hide_banner", "-y", "-loglevel", "error", *entrada, "-map", "0:v:0", *saida, str(png)]
+
+
 def fmt_time(seconds: float) -> str:
     seconds = max(0.0, seconds)
     h = int(seconds // 3600)
@@ -174,14 +195,21 @@ def fmt_time(seconds: float) -> str:
 class ExportWorker(QThread):
     progress = pyqtSignal(int)  # 0–100
     status = pyqtSignal(str)
-    done = pyqtSignal(bool, str, str, str)  # ok, mensagem, caminho do vídeo, caminho do frame
+    done = pyqtSignal(bool, str, str, list)  # ok, mensagem, caminho do vídeo, PNGs salvos
 
     def __init__(
-        self, info: VideoInfo, start: float, duration: float, out_path: Path, precise: bool, save_frame: bool
+        self,
+        info: VideoInfo,
+        start: float,
+        duration: float,
+        out_path: Path,
+        precise: bool,
+        frames: tuple[str, ...] = ("ultimo",),
     ):
         super().__init__()
         self.info, self.start_s, self.duration = info, start, duration
-        self.out_path, self.precise, self.save_frame = out_path, precise, save_frame
+        self.out_path, self.precise = out_path, precise
+        self.frames = tuple(q for q in FRAMES if q in frames)  # ordem fixa: primeiro, último
         self._proc: subprocess.Popen | None = None
         self._cancelled = False
 
@@ -253,55 +281,62 @@ class ExportWorker(QThread):
                 code, err = self._run(cmd, self.duration)
                 if self._cancelled:
                     self.out_path.unlink(missing_ok=True)
-                    self.done.emit(False, "Exportação cancelada.", "", "")
+                    self.done.emit(False, "Exportação cancelada.", "", [])
                     return
                 if code == 0:
                     break
             else:
                 self.out_path.unlink(missing_ok=True)
-                self.done.emit(False, f"O ffmpeg falhou:\n\n{err.strip()[-2000:]}", "", "")
+                self.done.emit(False, f"O ffmpeg falhou:\n\n{err.strip()[-2000:]}", "", [])
                 return
 
-            frame_path = ""
-            if self.save_frame:
-                self.status.emit("Salvando o último frame…")
-                fp = self.out_path.with_name(self.out_path.stem + "_ultimo_frame.png")
-                # Decodifica os últimos segundos do arquivo exportado e mantém só o último frame.
-                r = subprocess.run(
-                    [
-                        "ffmpeg",
-                        "-hide_banner",
-                        "-y",
-                        "-loglevel",
-                        "error",
-                        "-sseof",
-                        "-3",
-                        "-i",
-                        str(self.out_path),
-                        "-map",
-                        "0:v:0",
-                        "-update",
-                        "1",
-                        str(fp),
-                    ],
-                    capture_output=True,
-                    text=True,
-                )
+            salvos: list[str] = []
+            for qual in self.frames:
+                nome = FRAMES[qual].lower()
+                self.status.emit(f"Salvando o {nome}…")
+                fp = frame_png(self.out_path, qual)
+                r = subprocess.run(frame_cmd(self.out_path, qual, fp), capture_output=True, text=True)
                 if r.returncode != 0 or not fp.exists():
                     self.progress.emit(100)
                     self.done.emit(
                         True,
-                        f"Vídeo exportado, mas falhou ao salvar o frame:\n{r.stderr[-1000:]}",
+                        f"Vídeo exportado, mas falhou ao salvar o {nome}:\n{r.stderr[-1000:]}",
                         str(self.out_path),
-                        "",
+                        salvos,
                     )
                     return
-                frame_path = str(fp)
+                salvos.append(str(fp))
 
             self.progress.emit(100)
-            self.done.emit(True, "Exportação concluída.", str(self.out_path), frame_path)
+            self.done.emit(True, "Exportação concluída.", str(self.out_path), salvos)
         except Exception as e:  # noqa: BLE001
-            self.done.emit(False, f"Erro inesperado: {e}", "", "")
+            self.done.emit(False, f"Erro inesperado: {e}", "", [])
+
+
+def previa_frames(paths: list, lado: int = 260) -> QPixmap:
+    """Miniaturas dos PNGs lado a lado (primeiro à esquerda), para o diálogo de conclusão."""
+    pix = [QPixmap(p) for p in paths]
+    pix = [
+        p.scaled(
+            lado if len(pix) == 1 else lado * 3 // 4,
+            lado,
+            Qt.AspectRatioMode.KeepAspectRatio,
+            Qt.TransformationMode.SmoothTransformation,
+        )
+        for p in pix
+        if not p.isNull()
+    ]
+    if len(pix) <= 1:
+        return pix[0] if pix else QPixmap()
+    gap = 8
+    out = QPixmap(sum(p.width() for p in pix) + gap * (len(pix) - 1), max(p.height() for p in pix))
+    out.fill(Qt.GlobalColor.transparent)
+    with QPainter(out) as painter:
+        x = 0
+        for p in pix:
+            painter.drawPixmap(x, (out.height() - p.height()) // 2, p)
+            x += p.width() + gap
+    return out
 
 
 # --------------------------------------------------------------------------- #
@@ -444,7 +479,7 @@ class Timeline(QWidget):
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("BoundCut — cortar vídeo e salvar último frame")
+        self.setWindowTitle("BoundCut — cortar vídeo e salvar o primeiro e o último frame")
         self.resize(1100, 760)
         self.setAcceptDrops(True)
 
@@ -533,8 +568,9 @@ class MainWindow(QMainWindow):
         self.cmb_mode = QComboBox()
         self.cmb_mode.addItem("Preciso (reencoda, corte no frame exato)", True)
         self.cmb_mode.addItem("Rápido (sem reencodar — início/fim podem variar alguns frames)", False)
-        self.chk_frame = QCheckBox("Salvar último frame (PNG)")
-        self.chk_frame.setChecked(True)
+        # um checkbox por frame salvo junto com o corte; o último vem marcado
+        self.chk_frames = {qual: QCheckBox(f"{rotulo} (PNG)") for qual, rotulo in FRAMES.items()}
+        self.chk_frames["ultimo"].setChecked(True)
         self.btn_export = QPushButton("💾  Exportar corte  (Ctrl+E)")
         self.btn_export.setStyleSheet(
             f"QPushButton{{background:{ACCENT.name()}; color:white; font-weight:bold; padding:8px 18px;"
@@ -550,7 +586,8 @@ class MainWindow(QMainWindow):
         export = QHBoxLayout()
         export.addWidget(QLabel("Modo:"))
         export.addWidget(self.cmb_mode)
-        export.addWidget(self.chk_frame)
+        for chk in self.chk_frames.values():
+            export.addWidget(chk)
         export.addStretch(1)
         export.addWidget(self.progress, 1)
         export.addWidget(self.btn_cancel)
@@ -604,7 +641,7 @@ class MainWindow(QMainWindow):
             self.btn_export,
             self.btn_play,
             self.cmb_mode,
-            self.chk_frame,
+            *self.chk_frames.values(),
         ):
             wdg.setEnabled(on)
 
@@ -779,7 +816,7 @@ class MainWindow(QMainWindow):
             dur,
             out,
             precise=self.cmb_mode.currentData(),
-            save_frame=self.chk_frame.isChecked(),
+            frames=self.frames_escolhidos(),
         )
         self.worker.progress.connect(self.progress.setValue)
         self.worker.status.connect(self.statusBar().showMessage)
@@ -792,11 +829,14 @@ class MainWindow(QMainWindow):
         self.statusBar().showMessage(f"Exportando {out.name}…")
         self.worker.start()
 
+    def frames_escolhidos(self) -> tuple[str, ...]:
+        return tuple(q for q, chk in self.chk_frames.items() if chk.isChecked())
+
     def cancel_export(self):
         if self.worker:
             self.worker.cancel()
 
-    def _export_done(self, ok: bool, msg: str, video_path: str, frame_path: str):
+    def _export_done(self, ok: bool, msg: str, video_path: str, frame_paths: list):
         self.worker = None
         self.progress.hide()
         self.btn_cancel.hide()
@@ -811,18 +851,12 @@ class MainWindow(QMainWindow):
         box = QMessageBox(self)
         box.setWindowTitle("Pronto!")
         text = f"{msg}\n\nVídeo: {video_path}"
-        if frame_path:
-            text += f"\nÚltimo frame: {frame_path}"
-            pix = QPixmap(frame_path)
-            if not pix.isNull():
-                box.setIconPixmap(
-                    pix.scaled(
-                        260,
-                        260,
-                        Qt.AspectRatioMode.KeepAspectRatio,
-                        Qt.TransformationMode.SmoothTransformation,
-                    )
-                )
+        rotulos = {str(frame_png(Path(video_path), q)): r for q, r in FRAMES.items()}
+        for fp in frame_paths:
+            text += f"\n{rotulos.get(fp, 'Frame')}: {fp}"
+        previa = previa_frames(frame_paths)
+        if not previa.isNull():
+            box.setIconPixmap(previa)
         box.setText(text)
         open_btn = box.addButton("Abrir pasta", QMessageBox.ButtonRole.ActionRole)
         box.addButton(QMessageBox.StandardButton.Ok)

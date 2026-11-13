@@ -76,7 +76,7 @@ class TestEncoders(unittest.TestCase):
 
 class TestComandosExportacao(unittest.TestCase):
     def test_modo_preciso_tem_tentativa_reserva(self):
-        w = g.ExportWorker(info(), 2.0, 3.0, Path("/tmp/saida.mp4"), precise=True, save_frame=True)
+        w = g.ExportWorker(info(), 2.0, 3.0, Path("/tmp/saida.mp4"), precise=True)
         cmds = w._build_cmds()
         self.assertEqual(len(cmds), 2)
         self.assertIn("copy", cmds[0])  # 1ª: áudio copiado
@@ -89,10 +89,39 @@ class TestComandosExportacao(unittest.TestCase):
             self.assertEqual(c[-1], "/tmp/saida.mp4")
 
     def test_modo_rapido_copia_streams(self):
-        w = g.ExportWorker(info(), 0, 1, Path("/tmp/saida.webm"), precise=False, save_frame=False)
+        w = g.ExportWorker(info(), 0, 1, Path("/tmp/saida.webm"), precise=False, frames=())
         (cmd,) = w._build_cmds()
         self.assertEqual(cmd[cmd.index("-c") + 1], "copy")
         self.assertNotIn("+faststart", cmd)  # só faz sentido em mp4/mov
+
+
+class TestFrames(unittest.TestCase):
+    def test_nome_do_png(self):
+        out = Path("/tmp/video_corte.mp4")
+        self.assertEqual(g.frame_png(out, "primeiro"), Path("/tmp/video_corte_primeiro_frame.png"))
+        self.assertEqual(g.frame_png(out, "ultimo"), Path("/tmp/video_corte_ultimo_frame.png"))
+
+    def test_comando_do_primeiro_le_um_frame_do_inicio(self):
+        cmd = g.frame_cmd(Path("v.mp4"), "primeiro", Path("p.png"))
+        self.assertNotIn("-sseof", cmd)
+        self.assertEqual(cmd[cmd.index("-frames:v") + 1], "1")
+        self.assertEqual(cmd[-1], "p.png")
+
+    def test_comando_do_ultimo_le_o_fim(self):
+        cmd = g.frame_cmd(Path("v.mp4"), "ultimo", Path("u.png"))
+        self.assertLess(cmd.index("-sseof"), cmd.index("-i"))  # busca na entrada, antes do -i
+        self.assertIn("-update", cmd)
+
+    def test_frame_desconhecido(self):
+        with self.assertRaises(ValueError):
+            g.frame_cmd(Path("v.mp4"), "meio", Path("m.png"))
+
+    def test_worker_ignora_desconhecidos_e_ordena(self):
+        w = g.ExportWorker(info(), 0, 1, Path("/tmp/s.mp4"), precise=True, frames=("ultimo", "x", "primeiro"))
+        self.assertEqual(w.frames, ("primeiro", "ultimo"))
+
+    def test_padrao_continua_sendo_o_ultimo(self):
+        self.assertEqual(g.ExportWorker(info(), 0, 1, Path("/tmp/s.mp4"), precise=True).frames, ("ultimo",))
 
 
 class TestTimeline(unittest.TestCase):

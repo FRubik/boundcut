@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "boundcut"
 dynamic = ["version"]
-description = "Simple video trimmer that also saves the last frame of the cut as PNG (PyQt6 + ffmpeg)"
+description = "Simple video trimmer that also saves the first and/or last frame of the cut as PNG (PyQt6 + ffmpeg)"
 readme = "README.md"
 requires-python = ">=3.10"
 license = "MIT"
