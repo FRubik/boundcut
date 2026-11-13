@@ -6,7 +6,8 @@ import subprocess
 import unittest
 from pathlib import Path
 
-import boundcut as g
+import boundcut
+from boundcut import app as app_mod
 
 RAIZ = Path(__file__).resolve().parent.parent
 
@@ -24,19 +25,19 @@ class TestPyproject(unittest.TestCase):
 
     def test_versao_vem_do_modulo(self):
         self.assertIn("version", self.cfg["project"]["dynamic"])
-        self.assertEqual(self.cfg["tool"]["hatch"]["version"]["path"], "boundcut.py")
-        self.assertRegex(g.__version__, r"^\d+\.\d+\.\d+$")
+        self.assertEqual(self.cfg["tool"]["hatch"]["version"]["path"], "boundcut/__init__.py")
+        self.assertRegex(boundcut.__version__, r"^\d+\.\d+\.\d+$")
 
     def test_comando_aponta_para_funcao_existente(self):
         alvo = self.cfg["project"]["gui-scripts"]["boundcut"]
         modulo, funcao = alvo.split(":")
-        self.assertEqual(modulo, "boundcut")
-        self.assertTrue(callable(getattr(g, funcao)))
+        self.assertEqual(modulo, "boundcut.app")
+        self.assertTrue(callable(getattr(app_mod, funcao)))
 
-    def test_arquivos_empacotados_existem(self):
+    def test_pacote_empacotado_existe(self):
         wheel = self.cfg["tool"]["hatch"]["build"]["targets"]["wheel"]
-        for f in [*wheel["only-include"], *wheel["force-include"]]:
-            self.assertTrue((RAIZ / f).exists(), f)
+        self.assertEqual(wheel["packages"], ["boundcut"])
+        self.assertTrue((RAIZ / "boundcut" / "__init__.py").exists())
 
     def test_sdist_nao_leva_pasta_pessoal(self):
         # include é lista branca ancorada na raiz; sem "/" um padrão casaria dentro de sessoes/
@@ -47,7 +48,14 @@ class TestPyproject(unittest.TestCase):
 
 class TestArquivosDoProjeto(unittest.TestCase):
     def test_icone_existe(self):
-        self.assertTrue(g.ICON_PATH.exists())
+        # dentro do pacote, para ir junto no wheel e no .exe
+        self.assertTrue(app_mod.ICON_PATH.exists())
+        self.assertEqual(app_mod.ICON_PATH.parent.parent, RAIZ / "boundcut")
+
+    def test_midia_nao_depende_do_qt(self):
+        # o núcleo é reaproveitado sem janela (linha de comando, lote)
+        texto = (RAIZ / "boundcut" / "midia.py").read_text(encoding="utf-8")
+        self.assertNotIn("PyQt6", texto)
 
     def test_links_locais_do_readme_existem(self):
         for readme in ("README.md", "README.pt-BR.md"):

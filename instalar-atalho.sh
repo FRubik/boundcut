@@ -20,13 +20,14 @@ if [ "${1:-}" = "--remover" ]; then
 fi
 
 mkdir -p "$APPS" "$ICONES"
-cp "$RAIZ/assets/icone.svg" "$ICONES/boundcut.svg"
+cp "$RAIZ/boundcut/assets/icone.svg" "$ICONES/boundcut.svg"
 cat > "$APPS/boundcut.desktop" <<DESKTOP
 [Desktop Entry]
 Type=Application
 Name=BoundCut
 Comment=Cortar vídeo e salvar o último frame
-Exec=python3 "$RAIZ/boundcut.py" %f
+Exec=python3 -m boundcut %f
+Path=$RAIZ
 Icon=boundcut
 Terminal=false
 Categories=AudioVideo;Video;AudioVideoEditing;

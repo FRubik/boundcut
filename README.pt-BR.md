@@ -24,8 +24,8 @@ Em outros sistemas: `pip install PyQt6` e instale o ffmpeg pelo gerenciador de p
 Direto do repositório (usa o PyQt6 já instalado no sistema):
 
 ```bash
-python boundcut.py              # abre a janela
-python boundcut.py video.mp4    # já abre com um vídeo
+python -m boundcut              # abre a janela
+python -m boundcut video.mp4    # já abre com um vídeo
 ./instalar-atalho.sh             # opcional (Linux): atalho no menu, com ícone
 ```
 
