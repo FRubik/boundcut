@@ -47,6 +47,19 @@ python get_frame.py video.mp4    # já abre com um vídeo
 - **Rápido**: copia os streams sem reencodar. Instantâneo e sem perda, mas o início/fim
   podem variar alguns frames (o corte depende dos keyframes).
 
+## Testes
+
+```bash
+python -m unittest -v    # da raiz do projeto; sem dependências além das do programa
+```
+
+- `tests/test_unidade.py` — funções puras e lógica da interface (não precisa do ffmpeg).
+- `tests/test_exportacao.py` — ponta a ponta: gera vídeos sintéticos com o ffmpeg, corta e confere
+  container, codec, número de frames e se o PNG salvo é mesmo o frame marcado como fim.
+  É pulado se o ffmpeg não estiver instalado.
+
+A interface roda em modo `offscreen` nos testes, então não abre janela nem precisa de monitor.
+
 ## Licença
 
 [MIT](LICENSE)

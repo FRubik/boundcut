@@ -49,6 +49,19 @@ python get_frame.py video.mp4    # open with a video loaded
 - **Rápido** (fast): stream copy, no re-encoding. Instant and lossless, but start/end may be off by
   a few frames (the cut depends on keyframes).
 
+## Tests
+
+```bash
+python -m unittest -v    # from the project root; no dependencies beyond the app's own
+```
+
+- `tests/test_unidade.py` — unit tests for pure functions and UI logic (no ffmpeg needed).
+- `tests/test_exportacao.py` — end-to-end: generates synthetic videos with ffmpeg, cuts them and checks
+  container, codec, frame count, and that the saved PNG really is the frame marked as the end.
+  Skipped if ffmpeg is not installed.
+
+The UI runs with the `offscreen` platform during tests, so no window or display is needed.
+
 ## License
 
 [MIT](LICENSE)
