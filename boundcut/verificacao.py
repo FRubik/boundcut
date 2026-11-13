@@ -44,7 +44,7 @@ def verificar(relatorio: Path, icone: Path) -> int:
         MainWindow().close()
         item("janela", True)
 
-        with tempfile.TemporaryDirectory(prefix="boundcut-verificar-") as tmp:
+        with tempfile.TemporaryDirectory(prefix="boundcut-verificar-", ignore_cleanup_errors=True) as tmp:
             origem, saida = Path(tmp) / "origem.mp4", Path(tmp) / "corte.mp4"
             subprocess.run(
                 [BIN["ffmpeg"], "-hide_banner", "-loglevel", "error", "-y"]

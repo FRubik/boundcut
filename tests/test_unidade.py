@@ -136,7 +136,7 @@ class TestFfmpegEmbutido(unittest.TestCase):
     def setUp(self):
         original = dict(midia.BIN)
         self.addCleanup(lambda: (midia.BIN.clear(), midia.BIN.update(original)))
-        self._tmp = tempfile.TemporaryDirectory()
+        self._tmp = tempfile.TemporaryDirectory(ignore_cleanup_errors=True)
         self.addCleanup(self._tmp.cleanup)
         self.pasta = Path(self._tmp.name)
 
@@ -237,7 +237,7 @@ class TestCorteNaJanela(unittest.TestCase):
     def test_nome_padrao_nao_sobrescreve(self):
         import tempfile
 
-        with tempfile.TemporaryDirectory() as d:
+        with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as d:
             src = Path(d) / "video.mp4"
             src.touch()
             self.w.info = info()

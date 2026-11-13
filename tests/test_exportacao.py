@@ -24,7 +24,8 @@ class TestExportacao(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         app()
-        cls._tmp = tempfile.TemporaryDirectory()
+        # ignore_cleanup_errors: no Windows o player pode demorar a soltar o arquivo
+        cls._tmp = tempfile.TemporaryDirectory(ignore_cleanup_errors=True)
         cls.dir = Path(cls._tmp.name)
         cls.mp4 = gerar_video(cls.dir / "origem.mp4", fps=30, segundos=10)
         cls.webm = gerar_video(
@@ -123,7 +124,7 @@ class TestVerificacao(unittest.TestCase):
 
     def test_verificar_passa(self):
         app()
-        with tempfile.TemporaryDirectory() as tmp:
+        with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:
             rel = Path(tmp) / "relatorio.txt"
             codigo = verificacao.verificar(rel, app_mod.ICON_PATH)
             texto = rel.read_text(encoding="utf-8")
