@@ -1,12 +1,12 @@
 <p align="center"><img src="assets/icone-256.png" width="96" alt=""></p>
 
-# EndFrame
+# BoundCut
 
 **English** · [Português](README.pt-BR.md)
 
 A simple video trimmer that, along with the cut, **saves the last frame of the clip** as a PNG.
 
-![EndFrame window with a segment marked on the timeline](assets/prints/janela.png)
+![BoundCut window with a segment marked on the timeline](assets/prints/janela.png)
 
 <p align="center"><img src="assets/prints/exportado.png" width="480" alt="Export finished dialog with a preview of the last frame"></p>
 
@@ -26,16 +26,16 @@ Elsewhere: `pip install PyQt6` and install ffmpeg with your package manager.
 Straight from the repository (uses the system's PyQt6):
 
 ```bash
-python endframe.py              # open the window
-python endframe.py video.mp4    # open with a video loaded
+python boundcut.py              # open the window
+python boundcut.py video.mp4    # open with a video loaded
 ./instalar-atalho.sh             # optional (Linux): app menu shortcut with icon
 ```
 
-Or installed as a command (`endframe`) in an isolated environment that brings its own PyQt6:
+Or installed as a command (`boundcut`) in an isolated environment that brings its own PyQt6:
 
 ```bash
-uv tool install git+https://github.com/FRubik/endframe   # or: pipx install git+https://…
-endframe video.mp4
+uv tool install git+https://github.com/FRubik/boundcut   # or: pipx install git+https://…
+boundcut video.mp4
 ```
 
 ffmpeg still comes from the system either way.
