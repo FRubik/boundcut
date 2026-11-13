@@ -3,7 +3,7 @@
 import unittest
 from pathlib import Path
 
-import endframe as g
+import boundcut as g
 from tests.base import app
 
 

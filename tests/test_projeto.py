@@ -6,7 +6,7 @@ import subprocess
 import unittest
 from pathlib import Path
 
-import endframe as g
+import boundcut as g
 
 RAIZ = Path(__file__).resolve().parent.parent
 
@@ -24,13 +24,13 @@ class TestPyproject(unittest.TestCase):
 
     def test_versao_vem_do_modulo(self):
         self.assertIn("version", self.cfg["project"]["dynamic"])
-        self.assertEqual(self.cfg["tool"]["hatch"]["version"]["path"], "endframe.py")
+        self.assertEqual(self.cfg["tool"]["hatch"]["version"]["path"], "boundcut.py")
         self.assertRegex(g.__version__, r"^\d+\.\d+\.\d+$")
 
     def test_comando_aponta_para_funcao_existente(self):
-        alvo = self.cfg["project"]["gui-scripts"]["endframe"]
+        alvo = self.cfg["project"]["gui-scripts"]["boundcut"]
         modulo, funcao = alvo.split(":")
-        self.assertEqual(modulo, "endframe")
+        self.assertEqual(modulo, "boundcut")
         self.assertTrue(callable(getattr(g, funcao)))
 
     def test_arquivos_empacotados_existem(self):

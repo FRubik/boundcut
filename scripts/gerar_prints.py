@@ -25,7 +25,7 @@ from PyQt6.QtCore import Qt, QTimer  # noqa: E402
 from PyQt6.QtGui import QPixmap  # noqa: E402
 from PyQt6.QtWidgets import QApplication, QLabel  # noqa: E402
 
-import endframe as g  # noqa: E402
+import boundcut as g  # noqa: E402
 
 SAIDA = RAIZ / "assets" / "prints"
 IN_MS, OUT_MS = 1500, 6000
@@ -40,7 +40,7 @@ def main() -> int:
     app.setStyle("Fusion")
     SAIDA.mkdir(parents=True, exist_ok=True)
 
-    with tempfile.TemporaryDirectory(prefix="endframe-") as tmp:
+    with tempfile.TemporaryDirectory(prefix="boundcut-") as tmp:
         tmp = Path(tmp)
         video = tmp / "exemplo.mp4"
         ffmpeg(
