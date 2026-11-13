@@ -5,13 +5,13 @@ import tempfile
 import unittest
 from pathlib import Path
 
-import boundcut as g
+from boundcut import exportacao, janela, midia
 from tests.base import app, codec_video, contar_frames, extrair_frame, gerar_video, precisa_ffmpeg, psnr
 
 
 def exportar(info, start, dur, out, precise=True, frames=("primeiro", "ultimo")):
     """Roda o ExportWorker na thread atual e devolve o que ele emitiu em `done`."""
-    w = g.ExportWorker(info, start, dur, out, precise, frames)
+    w = exportacao.ExportWorker(info, start, dur, out, precise, frames)
     res = []
     w.done.connect(lambda *a: res.append(a))
     w.run()
@@ -35,13 +35,13 @@ class TestExportacao(unittest.TestCase):
         cls._tmp.cleanup()
 
     def _janela_com(self, video):
-        w = g.MainWindow()
+        w = janela.MainWindow()
         w.load(video)
         self.addCleanup(w.close)
         return w
 
     def test_probe(self):
-        i = g.probe(self.mp4)
+        i = midia.probe(self.mp4)
         self.assertEqual((i.vcodec, i.acodec, i.width, i.height), ("h264", "aac", 320, 180))
         self.assertAlmostEqual(i.fps, 30.0)
         self.assertAlmostEqual(i.duration, 10.0, delta=0.1)
@@ -51,7 +51,7 @@ class TestExportacao(unittest.TestCase):
         f.write_text("oi")
         # ffprobe recusa o arquivo (CalledProcessError) ou ele não tem vídeo (ValueError)
         with self.assertRaises((subprocess.CalledProcessError, ValueError)):
-            g.probe(f)
+            midia.probe(f)
 
     def _corte_preciso(self, origem, in_ms, out_ms, frame_ini, frame_fim, codec):
         w = self._janela_com(origem)
@@ -86,7 +86,7 @@ class TestExportacao(unittest.TestCase):
 
     def test_corte_rapido(self):
         out = self.dir / "rapido.mp4"
-        ok, msg, _video, frames = exportar(g.probe(self.mp4), 2.0, 3.0, out, precise=False)
+        ok, msg, _video, frames = exportar(midia.probe(self.mp4), 2.0, 3.0, out, precise=False)
         self.assertTrue(ok, msg)
         self.assertEqual(codec_video(out), "h264")
         self.assertEqual(len(frames), 2)
@@ -94,20 +94,20 @@ class TestExportacao(unittest.TestCase):
 
     def test_so_o_primeiro_frame(self):
         out = self.dir / "so_primeiro.mp4"
-        ok, msg, _video, frames = exportar(g.probe(self.mp4), 0, 1.0, out, frames=("primeiro",))
+        ok, msg, _video, frames = exportar(midia.probe(self.mp4), 0, 1.0, out, frames=("primeiro",))
         self.assertTrue(ok, msg)
         self.assertEqual([Path(f).name for f in frames], ["so_primeiro_primeiro_frame.png"])
-        self.assertFalse(g.frame_png(out, "ultimo").exists())
+        self.assertFalse(midia.frame_png(out, "ultimo").exists())
 
     def test_sem_salvar_frame(self):
         out = self.dir / "sem_frame.mp4"
-        ok, msg, _video, frames = exportar(g.probe(self.mp4), 0, 1.0, out, frames=())
+        ok, msg, _video, frames = exportar(midia.probe(self.mp4), 0, 1.0, out, frames=())
         self.assertTrue(ok, msg)
         self.assertEqual(frames, [])
         self.assertEqual(list(self.dir.glob("sem_frame_*.png")), [])
 
     def test_falha_nao_deixa_arquivo_pela_metade(self):
-        info = g.probe(self.mp4)
+        info = midia.probe(self.mp4)
         info.path = self.dir / "nao_existe.mp4"
         out = self.dir / "falha.mp4"
         ok, msg, _video, _frame = exportar(info, 0, 1.0, out)

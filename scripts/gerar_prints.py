@@ -25,7 +25,7 @@ from PyQt6.QtCore import Qt, QTimer  # noqa: E402
 from PyQt6.QtGui import QPixmap  # noqa: E402
 from PyQt6.QtWidgets import QApplication, QLabel  # noqa: E402
 
-import boundcut as g  # noqa: E402
+from boundcut import exportacao, janela  # noqa: E402
 
 SAIDA = RAIZ / "assets" / "prints"
 IN_MS, OUT_MS = 1500, 6000
@@ -63,7 +63,7 @@ def main() -> int:
             str(video),
         )
 
-        w = g.MainWindow()
+        w = janela.MainWindow()
         w.resize(1100, 720)
         w.show()
         w.load(video)
@@ -93,7 +93,7 @@ def main() -> int:
         start, dur = w._cut_seconds()
         out = tmp / "exemplo_corte.mp4"
         res = []
-        worker = g.ExportWorker(w.info, start, dur, out, precise=True, frames=("primeiro", "ultimo"))
+        worker = exportacao.ExportWorker(w.info, start, dur, out, precise=True, frames=("primeiro", "ultimo"))
         worker.done.connect(lambda *a: res.append(a))
         worker.run()
         ok, msg, vpath, fpaths = res[0]

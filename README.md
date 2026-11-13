@@ -26,8 +26,8 @@ Elsewhere: `pip install PyQt6` and install ffmpeg with your package manager.
 Straight from the repository (uses the system's PyQt6):
 
 ```bash
-python boundcut.py              # open the window
-python boundcut.py video.mp4    # open with a video loaded
+python -m boundcut              # open the window
+python -m boundcut video.mp4    # open with a video loaded
 ./instalar-atalho.sh             # optional (Linux): app menu shortcut with icon
 ```
 

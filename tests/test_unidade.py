@@ -3,12 +3,12 @@
 import unittest
 from pathlib import Path
 
-import boundcut as g
+from boundcut import exportacao, janela, midia, timeline
 from tests.base import app
 
 
 def info(vcodec="h264", fps=30.0, duration=10.0, pix_fmt="yuv420p", acodec="aac"):
-    return g.VideoInfo(
+    return midia.VideoInfo(
         path=Path("/tmp/x.mp4"),
         duration=duration,
         fps=fps,
@@ -22,27 +22,27 @@ def info(vcodec="h264", fps=30.0, duration=10.0, pix_fmt="yuv420p", acodec="aac"
 
 class TestParseRate(unittest.TestCase):
     def test_fracao(self):
-        self.assertAlmostEqual(g._parse_rate("30000/1001"), 29.97, places=2)
+        self.assertAlmostEqual(midia._parse_rate("30000/1001"), 29.97, places=2)
 
     def test_inteiro_e_decimal(self):
-        self.assertEqual(g._parse_rate("25"), 25.0)
-        self.assertEqual(g._parse_rate("23.976"), 23.976)
+        self.assertEqual(midia._parse_rate("25"), 25.0)
+        self.assertEqual(midia._parse_rate("23.976"), 23.976)
 
     def test_valores_invalidos_viram_zero(self):
         for v in (None, "", "0/0", "0", "abc", "1/0", "x/y"):
-            self.assertEqual(g._parse_rate(v), 0.0, v)
+            self.assertEqual(midia._parse_rate(v), 0.0, v)
 
 
 class TestFmtTime(unittest.TestCase):
     def test_minutos(self):
-        self.assertEqual(g.fmt_time(0), "00:00.000")
-        self.assertEqual(g.fmt_time(65.5), "01:05.500")
+        self.assertEqual(midia.fmt_time(0), "00:00.000")
+        self.assertEqual(midia.fmt_time(65.5), "01:05.500")
 
     def test_horas(self):
-        self.assertEqual(g.fmt_time(3661.25), "01:01:01.250")
+        self.assertEqual(midia.fmt_time(3661.25), "01:01:01.250")
 
     def test_negativo_vira_zero(self):
-        self.assertEqual(g.fmt_time(-3), "00:00.000")
+        self.assertEqual(midia.fmt_time(-3), "00:00.000")
 
 
 class TestEncoders(unittest.TestCase):
@@ -57,26 +57,26 @@ class TestEncoders(unittest.TestCase):
             "prores": "prores_ks",
         }
         for codec, encoder in casos.items():
-            args = g.video_encoder_args(info(codec), ".mkv")
+            args = midia.video_encoder_args(info(codec), ".mkv")
             self.assertEqual(args[args.index("-c:v") + 1], encoder, codec)
 
     def test_hevc_em_mp4_recebe_tag_hvc1(self):
-        self.assertIn("hvc1", g.video_encoder_args(info("hevc"), ".mp4"))
-        self.assertNotIn("hvc1", g.video_encoder_args(info("hevc"), ".mkv"))
+        self.assertIn("hvc1", midia.video_encoder_args(info("hevc"), ".mp4"))
+        self.assertNotIn("hvc1", midia.video_encoder_args(info("hevc"), ".mkv"))
 
     def test_codec_desconhecido_usa_padrao_do_container(self):
-        self.assertIn("libvpx-vp9", g.video_encoder_args(info("rawvideo"), ".webm"))
-        self.assertIn("libx264", g.video_encoder_args(info("rawvideo"), ".mov"))
+        self.assertIn("libvpx-vp9", midia.video_encoder_args(info("rawvideo"), ".webm"))
+        self.assertIn("libx264", midia.video_encoder_args(info("rawvideo"), ".mov"))
 
     def test_audio_reserva(self):
-        self.assertIn("libopus", g.audio_fallback_args(".webm"))
-        self.assertIn("libopus", g.audio_fallback_args(".mkv"))
-        self.assertIn("aac", g.audio_fallback_args(".mp4"))
+        self.assertIn("libopus", midia.audio_fallback_args(".webm"))
+        self.assertIn("libopus", midia.audio_fallback_args(".mkv"))
+        self.assertIn("aac", midia.audio_fallback_args(".mp4"))
 
 
 class TestComandosExportacao(unittest.TestCase):
     def test_modo_preciso_tem_tentativa_reserva(self):
-        w = g.ExportWorker(info(), 2.0, 3.0, Path("/tmp/saida.mp4"), precise=True)
+        w = exportacao.ExportWorker(info(), 2.0, 3.0, Path("/tmp/saida.mp4"), precise=True)
         cmds = w._build_cmds()
         self.assertEqual(len(cmds), 2)
         self.assertIn("copy", cmds[0])  # 1ª: áudio copiado
@@ -89,7 +89,7 @@ class TestComandosExportacao(unittest.TestCase):
             self.assertEqual(c[-1], "/tmp/saida.mp4")
 
     def test_modo_rapido_copia_streams(self):
-        w = g.ExportWorker(info(), 0, 1, Path("/tmp/saida.webm"), precise=False, frames=())
+        w = exportacao.ExportWorker(info(), 0, 1, Path("/tmp/saida.webm"), precise=False, frames=())
         (cmd,) = w._build_cmds()
         self.assertEqual(cmd[cmd.index("-c") + 1], "copy")
         self.assertNotIn("+faststart", cmd)  # só faz sentido em mp4/mov
@@ -98,36 +98,40 @@ class TestComandosExportacao(unittest.TestCase):
 class TestFrames(unittest.TestCase):
     def test_nome_do_png(self):
         out = Path("/tmp/video_corte.mp4")
-        self.assertEqual(g.frame_png(out, "primeiro"), Path("/tmp/video_corte_primeiro_frame.png"))
-        self.assertEqual(g.frame_png(out, "ultimo"), Path("/tmp/video_corte_ultimo_frame.png"))
+        self.assertEqual(midia.frame_png(out, "primeiro"), Path("/tmp/video_corte_primeiro_frame.png"))
+        self.assertEqual(midia.frame_png(out, "ultimo"), Path("/tmp/video_corte_ultimo_frame.png"))
 
     def test_comando_do_primeiro_le_um_frame_do_inicio(self):
-        cmd = g.frame_cmd(Path("v.mp4"), "primeiro", Path("p.png"))
+        cmd = midia.frame_cmd(Path("v.mp4"), "primeiro", Path("p.png"))
         self.assertNotIn("-sseof", cmd)
         self.assertEqual(cmd[cmd.index("-frames:v") + 1], "1")
         self.assertEqual(cmd[-1], "p.png")
 
     def test_comando_do_ultimo_le_o_fim(self):
-        cmd = g.frame_cmd(Path("v.mp4"), "ultimo", Path("u.png"))
+        cmd = midia.frame_cmd(Path("v.mp4"), "ultimo", Path("u.png"))
         self.assertLess(cmd.index("-sseof"), cmd.index("-i"))  # busca na entrada, antes do -i
         self.assertIn("-update", cmd)
 
     def test_frame_desconhecido(self):
         with self.assertRaises(ValueError):
-            g.frame_cmd(Path("v.mp4"), "meio", Path("m.png"))
+            midia.frame_cmd(Path("v.mp4"), "meio", Path("m.png"))
 
     def test_worker_ignora_desconhecidos_e_ordena(self):
-        w = g.ExportWorker(info(), 0, 1, Path("/tmp/s.mp4"), precise=True, frames=("ultimo", "x", "primeiro"))
+        w = exportacao.ExportWorker(
+            info(), 0, 1, Path("/tmp/s.mp4"), precise=True, frames=("ultimo", "x", "primeiro")
+        )
         self.assertEqual(w.frames, ("primeiro", "ultimo"))
 
     def test_padrao_continua_sendo_o_ultimo(self):
-        self.assertEqual(g.ExportWorker(info(), 0, 1, Path("/tmp/s.mp4"), precise=True).frames, ("ultimo",))
+        self.assertEqual(
+            exportacao.ExportWorker(info(), 0, 1, Path("/tmp/s.mp4"), precise=True).frames, ("ultimo",)
+        )
 
 
 class TestTimeline(unittest.TestCase):
     def setUp(self):
         app()
-        self.t = g.Timeline()
+        self.t = timeline.Timeline()
         self.t.resize(1024, 54)
         self.t.set_duration(10_000)
 
@@ -151,7 +155,7 @@ class TestCorteNaJanela(unittest.TestCase):
 
     def setUp(self):
         app()
-        self.w = g.MainWindow()
+        self.w = janela.MainWindow()
         self.w.info = info(fps=30.0, duration=10.0)
         self.w.timeline.set_duration(10_000)
 
