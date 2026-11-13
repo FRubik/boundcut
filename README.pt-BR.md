@@ -4,11 +4,11 @@
 
 [English](README.md) · **Português**
 
-Editor simples para **cortar um vídeo** e, junto com o corte, **salvar o último frame** como PNG.
+Editor simples para **cortar um vídeo** e, junto com o corte, **salvar o primeiro e/ou o último frame** como PNG.
 
 ![Janela do BoundCut com o trecho marcado na linha do tempo](assets/prints/janela.png)
 
-<p align="center"><img src="assets/prints/exportado.png" width="480" alt="Diálogo de exportação concluída com a prévia do último frame"></p>
+<p align="center"><img src="assets/prints/exportado.png" width="480" alt="Diálogo de exportação concluída com a prévia do primeiro e do último frame"></p>
 
 ## Requisitos
 
@@ -45,7 +45,8 @@ O ffmpeg continua vindo do sistema em qualquer caso.
    Os colchetes verde/vermelho na linha do tempo também podem ser arrastados.
 3. `Ctrl+E` exporta. São gerados:
    - `nome_corte.ext` — no mesmo container e codec do original;
-   - `nome_corte_ultimo_frame.png` — o último frame do corte (o frame marcado como fim).
+   - `nome_corte_primeiro_frame.png` e/ou `nome_corte_ultimo_frame.png` — o primeiro e o último
+     frame do corte (os frames marcados como início e fim), conforme as caixas marcadas.
 
 | Tecla | Ação |
 |---|---|
@@ -70,7 +71,7 @@ python -m unittest -v    # da raiz do projeto; sem dependências além das do pr
 
 - `tests/test_unidade.py` — funções puras e lógica da interface (não precisa do ffmpeg).
 - `tests/test_exportacao.py` — ponta a ponta: gera vídeos sintéticos com o ffmpeg, corta e confere
-  container, codec, número de frames e se o PNG salvo é mesmo o frame marcado como fim.
+  container, codec, número de frames e se os PNGs salvos são mesmo os frames marcados como início e fim.
   É pulado se o ffmpeg não estiver instalado.
 
 - `tests/test_projeto.py` — `pyproject.toml`, arquivos empacotados, links do README e o

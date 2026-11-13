@@ -93,10 +93,10 @@ def main() -> int:
         start, dur = w._cut_seconds()
         out = tmp / "exemplo_corte.mp4"
         res = []
-        worker = g.ExportWorker(w.info, start, dur, out, precise=True, save_frame=True)
+        worker = g.ExportWorker(w.info, start, dur, out, precise=True, frames=("primeiro", "ultimo"))
         worker.done.connect(lambda *a: res.append(a))
         worker.run()
-        ok, msg, vpath, fpath = res[0]
+        ok, msg, vpath, fpaths = res[0]
         if not ok:
             print(msg, file=sys.stderr)
             return 1
@@ -107,7 +107,7 @@ def main() -> int:
             d.done(0)  # close() é ignorado pelo QMessageBox
 
         QTimer.singleShot(300, capturar_dialogo)
-        w._export_done(ok, msg, vpath, fpath)
+        w._export_done(ok, msg, vpath, fpaths)
         w.close()
 
     for f in sorted(SAIDA.glob("*.png")):

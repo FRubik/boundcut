@@ -9,9 +9,9 @@ import boundcut as g
 from tests.base import app, codec_video, contar_frames, extrair_frame, gerar_video, precisa_ffmpeg, psnr
 
 
-def exportar(info, start, dur, out, precise=True, save_frame=True):
+def exportar(info, start, dur, out, precise=True, frames=("primeiro", "ultimo")):
     """Roda o ExportWorker na thread atual e devolve o que ele emitiu em `done`."""
-    w = g.ExportWorker(info, start, dur, out, precise, save_frame)
+    w = g.ExportWorker(info, start, dur, out, precise, frames)
     res = []
     w.done.connect(lambda *a: res.append(a))
     w.run()
@@ -58,19 +58,25 @@ class TestExportacao(unittest.TestCase):
         w.in_ms, w.out_ms = in_ms, out_ms
         start, dur = w._cut_seconds()
         out = self.dir / f"corte_{origem.suffix[1:]}{origem.suffix}"
-        ok, msg, video, frame = exportar(w.info, start, dur, out)
+        ok, msg, video, frames = exportar(w.info, start, dur, out)
 
         self.assertTrue(ok, msg)
         self.assertEqual(Path(video).suffix, origem.suffix)  # mesmo container
         self.assertEqual(codec_video(out), codec)  # mesmo codec
         self.assertEqual(contar_frames(out), frame_fim - frame_ini + 1)  # inclui os dois extremos
 
-        # o PNG salvo é o frame marcado como fim, e não o vizinho
-        self.assertEqual(Path(frame).name, out.stem + "_ultimo_frame.png")
-        ref = extrair_frame(origem, frame_fim, self.dir / "ref.png")
-        vizinho = extrair_frame(origem, frame_fim + 1, self.dir / "vizinho.png")
-        self.assertGreater(psnr(Path(frame), ref), 35)
-        self.assertGreater(psnr(Path(frame), ref), psnr(Path(frame), vizinho) + 10)
+        primeiro, ultimo = (Path(f) for f in frames)
+        self.assertEqual(primeiro.name, out.stem + "_primeiro_frame.png")
+        self.assertEqual(ultimo.name, out.stem + "_ultimo_frame.png")
+        # cada PNG é o frame marcado (início/fim), e não o vizinho de fora do corte
+        for png, idx, vizinho_idx in (
+            (primeiro, frame_ini, frame_ini - 1),
+            (ultimo, frame_fim, frame_fim + 1),
+        ):
+            ref = extrair_frame(origem, idx, self.dir / "ref.png")
+            vizinho = extrair_frame(origem, vizinho_idx, self.dir / "vizinho.png")
+            self.assertGreater(psnr(png, ref), 35, png.name)
+            self.assertGreater(psnr(png, ref), psnr(png, vizinho) + 10, png.name)
 
     def test_corte_preciso_mp4(self):
         self._corte_preciso(self.mp4, 2000, 5000, 60, 150, "h264")
@@ -80,17 +86,25 @@ class TestExportacao(unittest.TestCase):
 
     def test_corte_rapido(self):
         out = self.dir / "rapido.mp4"
-        ok, msg, _video, frame = exportar(g.probe(self.mp4), 2.0, 3.0, out, precise=False)
+        ok, msg, _video, frames = exportar(g.probe(self.mp4), 2.0, 3.0, out, precise=False)
         self.assertTrue(ok, msg)
         self.assertEqual(codec_video(out), "h264")
-        self.assertTrue(Path(frame).exists())
+        self.assertEqual(len(frames), 2)
+        self.assertTrue(all(Path(f).exists() for f in frames))
+
+    def test_so_o_primeiro_frame(self):
+        out = self.dir / "so_primeiro.mp4"
+        ok, msg, _video, frames = exportar(g.probe(self.mp4), 0, 1.0, out, frames=("primeiro",))
+        self.assertTrue(ok, msg)
+        self.assertEqual([Path(f).name for f in frames], ["so_primeiro_primeiro_frame.png"])
+        self.assertFalse(g.frame_png(out, "ultimo").exists())
 
     def test_sem_salvar_frame(self):
         out = self.dir / "sem_frame.mp4"
-        ok, msg, _video, frame = exportar(g.probe(self.mp4), 0, 1.0, out, save_frame=False)
+        ok, msg, _video, frames = exportar(g.probe(self.mp4), 0, 1.0, out, frames=())
         self.assertTrue(ok, msg)
-        self.assertEqual(frame, "")
-        self.assertFalse(out.with_name("sem_frame_ultimo_frame.png").exists())
+        self.assertEqual(frames, [])
+        self.assertEqual(list(self.dir.glob("sem_frame_*.png")), [])
 
     def test_falha_nao_deixa_arquivo_pela_metade(self):
         info = g.probe(self.mp4)

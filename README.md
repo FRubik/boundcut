@@ -4,11 +4,11 @@
 
 **English** · [Português](README.pt-BR.md)
 
-A simple video trimmer that, along with the cut, **saves the last frame of the clip** as a PNG.
+A simple video trimmer that, along with the cut, **saves the first and/or last frame of the clip** as PNG.
 
 ![BoundCut window with a segment marked on the timeline](assets/prints/janela.png)
 
-<p align="center"><img src="assets/prints/exportado.png" width="480" alt="Export finished dialog with a preview of the last frame"></p>
+<p align="center"><img src="assets/prints/exportado.png" width="480" alt="Export finished dialog with a preview of the first and last frames"></p>
 
 > The interface is in Brazilian Portuguese.
 
@@ -47,7 +47,8 @@ ffmpeg still comes from the system either way.
    The green/red brackets on the timeline can also be dragged.
 3. `Ctrl+E` exports:
    - `name_corte.ext` — same container and codec as the original;
-   - `name_corte_ultimo_frame.png` — the last frame of the clip (the frame marked as the end).
+   - `name_corte_primeiro_frame.png` and/or `name_corte_ultimo_frame.png` — the first and last
+     frame of the clip (the frames marked as start and end), depending on the checked boxes.
 
 | Key | Action |
 |---|---|
@@ -72,7 +73,7 @@ python -m unittest -v    # from the project root; no dependencies beyond the app
 
 - `tests/test_unidade.py` — unit tests for pure functions and UI logic (no ffmpeg needed).
 - `tests/test_exportacao.py` — end-to-end: generates synthetic videos with ffmpeg, cuts them and checks
-  container, codec, frame count, and that the saved PNG really is the frame marked as the end.
+  container, codec, frame count, and that the saved PNGs really are the frames marked as start and end.
   Skipped if ffmpeg is not installed.
 
 - `tests/test_projeto.py` — `pyproject.toml`, packaged files, README links and
