@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""get_frame — editor simples para cortar um vídeo e salvar o último frame do corte.
+"""EndFrame — editor simples para cortar um vídeo e salvar o último frame do corte.
 
 Fluxo: abrir vídeo → marcar início/fim → exportar.
 A exportação mantém o formato original (mesmo container e, quando possível,
@@ -54,9 +54,9 @@ from PyQt6.QtWidgets import (
 VIDEO_EXTS = {".mp4", ".mov", ".mkv", ".webm", ".avi", ".m4v", ".mpg", ".mpeg", ".ts", ".wmv", ".flv"}
 
 _AQUI = Path(__file__).resolve().parent
-# rodando do repositório: assets/icone.svg; instalado (pip/uv/pipx): get_frame_icone.svg ao lado do módulo
+# rodando do repositório: assets/icone.svg; instalado (pip/uv/pipx): endframe_icone.svg ao lado do módulo
 ICON_PATH = next(
-    (p for p in (_AQUI / "assets" / "icone.svg", _AQUI / "get_frame_icone.svg") if p.exists()),
+    (p for p in (_AQUI / "assets" / "icone.svg", _AQUI / "endframe_icone.svg") if p.exists()),
     _AQUI / "assets" / "icone.svg",
 )
 
@@ -444,7 +444,7 @@ class Timeline(QWidget):
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("get_frame — cortar vídeo e salvar último frame")
+        self.setWindowTitle("EndFrame — cortar vídeo e salvar último frame")
         self.resize(1100, 760)
         self.setAcceptDrops(True)
 
@@ -840,8 +840,8 @@ class MainWindow(QMainWindow):
 def main():
     missing = [b for b in ("ffmpeg", "ffprobe") if not shutil.which(b)]
     app = QApplication(sys.argv)
-    app.setApplicationName("get_frame")
-    app.setDesktopFileName("get_frame")  # no Wayland o ícone da barra vem do .desktop
+    app.setApplicationName("EndFrame")
+    app.setDesktopFileName("endframe")  # no Wayland o ícone da barra vem do .desktop
     if ICON_PATH.exists():
         app.setWindowIcon(QIcon(str(ICON_PATH)))
     app.setStyle("Fusion")

@@ -6,7 +6,7 @@ import subprocess
 import unittest
 from pathlib import Path
 
-import get_frame as g
+import endframe as g
 
 RAIZ = Path(__file__).resolve().parent.parent
 
@@ -24,13 +24,13 @@ class TestPyproject(unittest.TestCase):
 
     def test_versao_vem_do_modulo(self):
         self.assertIn("version", self.cfg["project"]["dynamic"])
-        self.assertEqual(self.cfg["tool"]["hatch"]["version"]["path"], "get_frame.py")
+        self.assertEqual(self.cfg["tool"]["hatch"]["version"]["path"], "endframe.py")
         self.assertRegex(g.__version__, r"^\d+\.\d+\.\d+$")
 
     def test_comando_aponta_para_funcao_existente(self):
-        alvo = self.cfg["project"]["gui-scripts"]["get-frame"]
+        alvo = self.cfg["project"]["gui-scripts"]["endframe"]
         modulo, funcao = alvo.split(":")
-        self.assertEqual(modulo, "get_frame")
+        self.assertEqual(modulo, "endframe")
         self.assertTrue(callable(getattr(g, funcao)))
 
     def test_arquivos_empacotados_existem(self):

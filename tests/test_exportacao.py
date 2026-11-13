@@ -5,7 +5,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-import get_frame as g
+import endframe as g
 from tests.base import app, codec_video, contar_frames, extrair_frame, gerar_video, precisa_ffmpeg, psnr
 
 

@@ -3,7 +3,7 @@ requires = ["hatchling>=1.26"]
 build-backend = "hatchling.build"
 
 [project]
-name = "get-frame"
+name = "endframe"
 dynamic = ["version"]
 description = "Simple video trimmer that also saves the last frame of the cut as PNG (PyQt6 + ffmpeg)"
 readme = "README.md"
@@ -21,24 +21,24 @@ classifiers = [
 dependencies = ["PyQt6>=6.5"]
 
 [project.urls]
-Repository = "https://github.com/FRubik/get_frame"
+Repository = "https://github.com/FRubik/endframe"
 
 [project.gui-scripts]
-get-frame = "get_frame:main"
+endframe = "endframe:main"
 
 [tool.hatch.version]
-path = "get_frame.py"
+path = "endframe.py"
 
 # programa de arquivo único: o wheel leva o módulo e o ícone ao lado dele
 [tool.hatch.build.targets.wheel]
-only-include = ["get_frame.py"]
+only-include = ["endframe.py"]
 
 [tool.hatch.build.targets.wheel.force-include]
-"assets/icone.svg" = "get_frame_icone.svg"
+"assets/icone.svg" = "endframe_icone.svg"
 
 [tool.hatch.build.targets.sdist]
 # padrões ancorados na raiz ("/..."): sem a barra, "README*.md" casaria em qualquer subpasta
-include = ["/get_frame.py", "/assets/", "/tests/", "/scripts/", "/instalar-atalho.sh", "/README.md", "/README.pt-BR.md", "/LICENSE"]
+include = ["/endframe.py", "/assets/", "/tests/", "/scripts/", "/instalar-atalho.sh", "/README.md", "/README.pt-BR.md", "/LICENSE"]
 
 # Ruff: lint + formatação. Rodar com `uvx ruff check . && uvx ruff format --check .`
 # (os testes também rodam, em tests/test_projeto.py)

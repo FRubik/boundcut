@@ -3,7 +3,7 @@
 import unittest
 from pathlib import Path
 
-import get_frame as g
+import endframe as g
 from tests.base import app
 
 

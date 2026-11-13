@@ -1,12 +1,12 @@
 <p align="center"><img src="assets/icone-256.png" width="96" alt=""></p>
 
-# get_frame
+# EndFrame
 
 [English](README.md) · **Português**
 
 Editor simples para **cortar um vídeo** e, junto com o corte, **salvar o último frame** como PNG.
 
-![Janela do get_frame com o trecho marcado na linha do tempo](assets/prints/janela.png)
+![Janela do EndFrame com o trecho marcado na linha do tempo](assets/prints/janela.png)
 
 <p align="center"><img src="assets/prints/exportado.png" width="480" alt="Diálogo de exportação concluída com a prévia do último frame"></p>
 
@@ -24,16 +24,16 @@ Em outros sistemas: `pip install PyQt6` e instale o ffmpeg pelo gerenciador de p
 Direto do repositório (usa o PyQt6 já instalado no sistema):
 
 ```bash
-python get_frame.py              # abre a janela
-python get_frame.py video.mp4    # já abre com um vídeo
+python endframe.py              # abre a janela
+python endframe.py video.mp4    # já abre com um vídeo
 ./instalar-atalho.sh             # opcional (Linux): atalho no menu, com ícone
 ```
 
-Ou instalado como comando (`get-frame`), num ambiente isolado que já traz o PyQt6:
+Ou instalado como comando (`endframe`), num ambiente isolado que já traz o PyQt6:
 
 ```bash
-uv tool install git+https://github.com/FRubik/get_frame   # ou: pipx install git+https://…
-get-frame video.mp4
+uv tool install git+https://github.com/FRubik/endframe   # ou: pipx install git+https://…
+endframe video.mp4
 ```
 
 O ffmpeg continua vindo do sistema em qualquer caso.
