@@ -42,6 +42,12 @@ class TestExportacao(unittest.TestCase):
         self.addCleanup(w.close)
         return w
 
+    def test_fechar_solta_o_video(self):
+        w = self._janela_com(self.mp4)
+        self.assertFalse(w.player.source().isEmpty())
+        w.close()
+        self.assertTrue(w.player.source().isEmpty())
+
     def test_probe(self):
         i = midia.probe(self.mp4)
         self.assertEqual((i.vcodec, i.acodec, i.width, i.height), ("h264", "aac", 320, 180))
