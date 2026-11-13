@@ -1,0 +1,20 @@
+# ambiente
+.venv/
+.python-version
+
+# python
+__pycache__/
+*.py[cod]
+
+# editores e ferramentas
+.vscode/
+.idea/
+.ruff_cache/
+
+# vídeos e frames — são do usuário ou gerados pelo programa, não fazem parte do projeto
+*.mp4
+*.mov
+*.mkv
+*.webm
+*.avi
+*_ultimo_frame.png
