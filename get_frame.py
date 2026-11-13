@@ -10,6 +10,8 @@ Requisitos: Python 3.10+, PyQt6 (com QtMultimedia) e ffmpeg/ffprobe no PATH.
 
 from __future__ import annotations
 
+__version__ = "0.1.0"
+
 import json
 import math
 import shutil
@@ -51,7 +53,10 @@ from PyQt6.QtWidgets import (
 
 VIDEO_EXTS = {".mp4", ".mov", ".mkv", ".webm", ".avi", ".m4v", ".mpg", ".mpeg", ".ts", ".wmv", ".flv"}
 
-ICON_PATH = Path(__file__).resolve().parent / "assets" / "icone.svg"
+_AQUI = Path(__file__).resolve().parent
+# rodando do repositório: assets/icone.svg; instalado (pip/uv/pipx): get_frame_icone.svg ao lado do módulo
+ICON_PATH = next((p for p in (_AQUI / "assets" / "icone.svg", _AQUI / "get_frame_icone.svg") if p.exists()),
+                 _AQUI / "assets" / "icone.svg")
 
 ACCENT = QColor("#4f9dff")
 IN_COLOR = QColor("#3ecf8e")
