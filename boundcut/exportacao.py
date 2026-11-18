@@ -7,7 +7,16 @@ from pathlib import Path
 
 from PyQt6.QtCore import QThread, pyqtSignal
 
-from boundcut.midia import FRAMES, VideoInfo, audio_fallback_args, frame_cmd, frame_png, video_encoder_args
+from boundcut.midia import (
+    BIN,
+    FRAMES,
+    SUBPROCESS_KW,
+    VideoInfo,
+    audio_fallback_args,
+    frame_cmd,
+    frame_png,
+    video_encoder_args,
+)
 
 
 class ExportWorker(QThread):
@@ -39,7 +48,7 @@ class ExportWorker(QThread):
     # -- ffmpeg com barra de progresso --------------------------------------
     def _run(self, cmd: list[str], total: float) -> tuple[int, str]:
         # o "with" fecha os pipes ao terminar, inclusive se a exportação for cancelada
-        with subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True) as proc:
+        with subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, **SUBPROCESS_KW) as proc:
             self._proc = proc
             assert proc.stdout and proc.stderr
             for line in proc.stdout:
@@ -55,7 +64,7 @@ class ExportWorker(QThread):
     def _build_cmds(self) -> list[list[str]]:
         ext = self.out_path.suffix.lower()
         base = [
-            "ffmpeg",
+            BIN["ffmpeg"],
             "-hide_banner",
             "-y",
             "-nostats",
@@ -82,6 +91,11 @@ class ExportWorker(QThread):
         if not self.precise:
             return [base + ["-c", "copy", "-avoid_negative_ts", "make_zero"] + tail]
 
+        # O -ss antes do -i corta o vídeo reencodado no frame exato, mas o áudio copiado vem desde o
+        # keyframe anterior ao início (até vários segundos antes). O MP4 esconde isso com uma edit
+        # list; o MKV e o WebM não têm, e o corte começava com o áudio de antes e a imagem parada.
+        # "-ss 0" na saída descarta tudo o que ficou antes do início do corte.
+        base += ["-ss", "0"]
         venc = video_encoder_args(self.info, ext)
         pix = ["-pix_fmt", self.info.pix_fmt] if self.info.pix_fmt else []
         # 1ª tentativa: áudio copiado e pix_fmt original; 2ª: áudio reencodado e pix_fmt padrão.
@@ -113,7 +127,7 @@ class ExportWorker(QThread):
                 nome = FRAMES[qual].lower()
                 self.status.emit(f"Salvando o {nome}…")
                 fp = frame_png(self.out_path, qual)
-                r = subprocess.run(frame_cmd(self.out_path, qual, fp), capture_output=True, text=True)
+                r = subprocess.run(frame_cmd(self.out_path, qual, fp), capture_output=True, **SUBPROCESS_KW)
                 if r.returncode != 0 or not fp.exists():
                     self.progress.emit(100)
                     self.done.emit(

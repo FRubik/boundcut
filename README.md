@@ -12,7 +12,17 @@ A simple video trimmer that, along with the cut, **saves the first and/or last f
 
 > The interface is in Brazilian Portuguese.
 
-## Requirements
+## Windows
+
+**[Download BoundCut for Windows](https://github.com/FRubik/boundcut/releases/latest/download/BoundCut-windows.zip)**
+(.zip; [all releases](https://github.com/FRubik/boundcut/releases)). ffmpeg is included: just
+extract it and run `BoundCut.exe`. The executable is not signed, so Windows may show
+"Windows protected your PC" — click *More info* → *Run anyway*.
+
+The .zip is built by GitHub Actions (`.github/workflows/windows.yml`), which runs the tests on
+Windows and a self-test on the .exe itself (`BoundCut.exe --verificar report.txt`).
+
+## Requirements (running from source, Linux/macOS/Windows)
 
 - Python 3.10+
 - PyQt6 with QtMultimedia

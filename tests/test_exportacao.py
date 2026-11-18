@@ -5,8 +5,18 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from boundcut import exportacao, janela, midia
-from tests.base import app, codec_video, contar_frames, extrair_frame, gerar_video, precisa_ffmpeg, psnr
+from boundcut import app as app_mod
+from boundcut import exportacao, janela, midia, verificacao
+from tests.base import (
+    app,
+    codec_video,
+    contar_frames,
+    extrair_frame,
+    gerar_video,
+    inicio_das_faixas,
+    precisa_ffmpeg,
+    psnr,
+)
 
 
 def exportar(info, start, dur, out, precise=True, frames=("primeiro", "ultimo")):
@@ -23,7 +33,8 @@ class TestExportacao(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         app()
-        cls._tmp = tempfile.TemporaryDirectory()
+        # ignore_cleanup_errors: no Windows o player pode demorar a soltar o arquivo
+        cls._tmp = tempfile.TemporaryDirectory(ignore_cleanup_errors=True)
         cls.dir = Path(cls._tmp.name)
         cls.mp4 = gerar_video(cls.dir / "origem.mp4", fps=30, segundos=10)
         cls.webm = gerar_video(
@@ -39,6 +50,12 @@ class TestExportacao(unittest.TestCase):
         w.load(video)
         self.addCleanup(w.close)
         return w
+
+    def test_fechar_solta_o_video(self):
+        w = self._janela_com(self.mp4)
+        self.assertFalse(w.player.source().isEmpty())
+        w.close()
+        self.assertTrue(w.player.source().isEmpty())
 
     def test_probe(self):
         i = midia.probe(self.mp4)
@@ -84,6 +101,22 @@ class TestExportacao(unittest.TestCase):
     def test_corte_preciso_webm(self):
         self._corte_preciso(self.webm, 1000, 3000, 25, 75, "vp9")
 
+    def test_corte_preciso_mkv_sem_audio_antes_do_inicio(self):
+        # keyframe só a cada 10 s: o início do corte (4 s) fica longe do keyframe anterior (0 s), e o
+        # áudio copiado vinha desde ele — o MKV abria com 4 s de áudio e a imagem parada
+        origem = gerar_video(self.dir / "gop_longo.mkv", fps=30, segundos=10, gop=300)
+        w = self._janela_com(origem)
+        w.in_ms, w.out_ms = 4000, 5990
+        start, dur = w._cut_seconds()
+        out = self.dir / "gop_longo_corte.mkv"
+        ok, msg, _video, _frames = exportar(w.info, start, dur, out, frames=())
+        self.assertTrue(ok, msg)
+        self.assertEqual(contar_frames(out), 60)
+        inicio = inicio_das_faixas(out)
+        self.assertAlmostEqual(inicio["video"], 0, delta=0.05)
+        self.assertAlmostEqual(inicio["audio"], 0, delta=0.05)
+        self.assertAlmostEqual(midia.probe(out).duration, 2.0, delta=0.1)
+
     def test_corte_rapido(self):
         out = self.dir / "rapido.mp4"
         ok, msg, _video, frames = exportar(midia.probe(self.mp4), 2.0, 3.0, out, precise=False)
@@ -114,6 +147,21 @@ class TestExportacao(unittest.TestCase):
         self.assertFalse(ok)
         self.assertIn("ffmpeg falhou", msg)
         self.assertFalse(out.exists())
+
+
+@precisa_ffmpeg
+class TestVerificacao(unittest.TestCase):
+    """O autoteste que a build do Windows roda no .exe também tem que passar aqui."""
+
+    def test_verificar_passa(self):
+        app()
+        with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:
+            rel = Path(tmp) / "relatorio.txt"
+            codigo = verificacao.verificar(rel, app_mod.ICON_PATH)
+            texto = rel.read_text(encoding="utf-8")
+        self.assertEqual(codigo, 0, texto)
+        self.assertIn("RESULTADO: ok", texto)
+        self.assertIn("[ok] exportação com os dois frames", texto)
 
 
 if __name__ == "__main__":

@@ -10,7 +10,17 @@ Editor simples para **cortar um vídeo** e, junto com o corte, **salvar o primei
 
 <p align="center"><img src="assets/prints/exportado.png" width="480" alt="Diálogo de exportação concluída com a prévia do primeiro e do último frame"></p>
 
-## Requisitos
+## Windows
+
+**[Baixar o BoundCut para Windows](https://github.com/FRubik/boundcut/releases/latest/download/BoundCut-windows.zip)**
+(.zip; [todas as versões](https://github.com/FRubik/boundcut/releases)). Já vem com o ffmpeg:
+é só extrair e abrir o `BoundCut.exe`. Como o executável não é assinado, o Windows pode mostrar
+"O Windows protegeu o computador" — clique em *Mais informações* → *Executar assim mesmo*.
+
+O .zip é gerado pelo GitHub Actions (`.github/workflows/windows.yml`), que roda os testes no
+Windows e um autoteste no próprio .exe (`BoundCut.exe --verificar relatorio.txt`).
+
+## Requisitos (rodando pelo código, Linux/macOS/Windows)
 
 - Python 3.10+
 - PyQt6 com QtMultimedia

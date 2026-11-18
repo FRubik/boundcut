@@ -453,4 +453,7 @@ class MainWindow(QMainWindow):
         if self.worker:
             self.worker.cancel()
             self.worker.wait(3000)
+        # solta o arquivo: no Windows, vídeo aberto no player não pode ser apagado nem movido
+        self.player.stop()
+        self.player.setSource(QUrl())
         super().closeEvent(e)
