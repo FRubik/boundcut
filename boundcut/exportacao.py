@@ -91,6 +91,11 @@ class ExportWorker(QThread):
         if not self.precise:
             return [base + ["-c", "copy", "-avoid_negative_ts", "make_zero"] + tail]
 
+        # O -ss antes do -i corta o vídeo reencodado no frame exato, mas o áudio copiado vem desde o
+        # keyframe anterior ao início (até vários segundos antes). O MP4 esconde isso com uma edit
+        # list; o MKV e o WebM não têm, e o corte começava com o áudio de antes e a imagem parada.
+        # "-ss 0" na saída descarta tudo o que ficou antes do início do corte.
+        base += ["-ss", "0"]
         venc = video_encoder_args(self.info, ext)
         pix = ["-pix_fmt", self.info.pix_fmt] if self.info.pix_fmt else []
         # 1ª tentativa: áudio copiado e pix_fmt original; 2ª: áudio reencodado e pix_fmt padrão.

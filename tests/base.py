@@ -26,7 +26,13 @@ def app() -> QApplication:
 
 
 def gerar_video(
-    destino: Path, *, fps: int = 30, segundos: float = 10, vcodec: str = "libx264", acodec: str | None = "aac"
+    destino: Path,
+    *,
+    fps: int = 30,
+    segundos: float = 10,
+    vcodec: str = "libx264",
+    acodec: str | None = "aac",
+    gop: int | None = None,
 ) -> Path:
     """Gera um vídeo sintético (testsrc2 tem contador e cores que mudam a cada frame)."""
     cmd = [
@@ -44,6 +50,7 @@ def gerar_video(
         cmd += ["-f", "lavfi", "-i", "sine=frequency=440"]
     cmd += ["-t", str(segundos), "-c:v", vcodec, "-pix_fmt", "yuv420p"]
     cmd += ["-c:a", acodec] if acodec else []
+    cmd += ["-g", str(gop)] if gop else []  # distância entre keyframes
     subprocess.run(cmd + [str(destino)], check=True)
     return destino
 
@@ -68,6 +75,31 @@ def contar_frames(video: Path) -> int:
         check=True,
     ).stdout
     return int(out.strip().strip(","))
+
+
+def inicio_das_faixas(video: Path) -> dict[str, float]:
+    """Menor timestamp de pacote de cada faixa ("video", "audio"), em segundos."""
+    out = subprocess.run(
+        [
+            "ffprobe",
+            "-v",
+            "error",
+            "-show_entries",
+            "packet=codec_type,pts_time",
+            "-of",
+            "csv=p=0",
+            str(video),
+        ],
+        capture_output=True,
+        text=True,
+        check=True,
+    ).stdout
+    inicio: dict[str, float] = {}
+    for linha in out.splitlines():
+        tipo, _, pts = linha.strip(",").partition(",")
+        if pts and pts != "N/A":
+            inicio[tipo] = min(inicio.get(tipo, float("inf")), float(pts))
+    return inicio
 
 
 def codec_video(video: Path) -> str:
